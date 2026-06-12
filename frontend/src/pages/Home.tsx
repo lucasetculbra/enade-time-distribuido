@@ -1,0 +1,231 @@
+import {
+  Award,
+  Calendar,
+  Cpu,
+  Database,
+  Flag,
+  Gauge,
+  Map,
+  Timer,
+  Zap,
+} from "lucide-react";
+
+import { KpiGrid } from "@/components/cards/KpiGrid";
+import { MetricCard } from "@/components/cards/MetricCard";
+import { Card, CardHeader } from "@/components/ui/Card";
+import { QueryBoundary } from "@/components/feedback/QueryBoundary";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { Link } from "react-router-dom";
+
+import { useComparativo } from "@/hooks/useBenchmark";
+import {
+  useResumoAnual,
+  useResumoRegiao,
+  useResumoUF,
+} from "@/hooks/useAnalises";
+import {
+  formatDecimal,
+  formatInt,
+  formatPercent,
+  formatSeconds,
+  formatSpeedup,
+  formatThroughput,
+} from "@/lib/format";
+
+export default function Home() {
+  const anual = useResumoAnual({});
+  const regiao = useResumoRegiao({});
+  const uf = useResumoUF({});
+  const comparativo = useComparativo(true);
+
+  const totalRegistros =
+    anual.data?.reduce((acc, r) => acc + r.total_registros, 0) ?? null;
+  const anosCobertos = anual.data?.length ?? null;
+  const totalRegioes = regiao.data?.length ?? null;
+  const totalUFs = uf.data?.length ?? null;
+
+  const tempoBase = comparativo.data?.tempo_baseline_seg ?? null;
+
+  const paralelos = comparativo.data?.itens.filter((i) => i.modo === "paralelo") ?? [];
+  const melhorSpeedup = paralelos.reduce<typeof paralelos[number] | null>(
+    (best, cur) =>
+      cur.speedup !== null && (best === null || (cur.speedup ?? 0) > (best.speedup ?? 0))
+        ? cur
+        : best,
+    null,
+  );
+  const melhorEficiencia = paralelos.reduce<typeof paralelos[number] | null>(
+    (best, cur) =>
+      cur.eficiencia !== null && (best === null || (cur.eficiencia ?? 0) > (best.eficiencia ?? 0))
+        ? cur
+        : best,
+    null,
+  );
+  const melhorThroughput = paralelos.reduce<typeof paralelos[number] | null>(
+    (best, cur) =>
+      best === null || cur.throughput_lps > best.throughput_lps ? cur : best,
+    null,
+  );
+
+  return (
+    <PageContainer
+      title="Visão Geral"
+      description="Indicadores principais do projeto: cobertura dos microdados ENADE (Norte e Nordeste, Computação) e resultados do experimento de processamento paralelo (Fase 2)."
+    >
+      <section>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-academia-600 mb-2">
+          Microdados ENADE
+        </h3>
+        <KpiGrid>
+          <MetricCard
+            label="Total de registros"
+            value={
+              anual.isPending
+                ? "…"
+                : totalRegistros !== null
+                ? formatInt(totalRegistros)
+                : "—"
+            }
+            unit="estudantes"
+            icon={Database}
+          />
+          <MetricCard
+            label="Anos analisados"
+            value={anual.isPending ? "…" : formatInt(anosCobertos)}
+            unit="edições ENADE"
+            icon={Calendar}
+            hint="2005 a 2021"
+          />
+          <MetricCard
+            label="Regiões cobertas"
+            value={regiao.isPending ? "…" : formatInt(totalRegioes)}
+            unit="Norte + Nordeste"
+            icon={Map}
+          />
+          <MetricCard
+            label="UFs cobertas"
+            value={uf.isPending ? "…" : formatInt(totalUFs)}
+            unit="estados"
+            icon={Flag}
+          />
+        </KpiGrid>
+      </section>
+
+      <section>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-academia-600 mb-2">
+          Processamento paralelo (SPD)
+        </h3>
+        <KpiGrid>
+          <MetricCard
+            label="Tempo sequencial (baseline)"
+            value={formatSeconds(tempoBase)}
+            icon={Timer}
+            hint={
+              comparativo.data?.baseline_sequencial_id
+                ? `Execução #${comparativo.data.baseline_sequencial_id}`
+                : undefined
+            }
+          />
+          <MetricCard
+            label="Melhor speedup"
+            value={formatSpeedup(melhorSpeedup?.speedup ?? null)}
+            icon={Zap}
+            tone="primary"
+            hint={
+              melhorSpeedup
+                ? `${melhorSpeedup.num_workers} workers (#${melhorSpeedup.execucao_id})`
+                : undefined
+            }
+          />
+          <MetricCard
+            label="Melhor eficiência"
+            value={formatPercent(melhorEficiencia?.eficiencia ?? null)}
+            icon={Gauge}
+            tone="success"
+            hint={
+              melhorEficiencia
+                ? `${melhorEficiencia.num_workers} workers (#${melhorEficiencia.execucao_id})`
+                : undefined
+            }
+          />
+          <MetricCard
+            label="Throughput máximo"
+            value={
+              melhorThroughput
+                ? formatDecimal(melhorThroughput.throughput_lps, 2)
+                : "—"
+            }
+            unit="linhas/s"
+            icon={Cpu}
+            tone="warning"
+            hint={
+              melhorThroughput
+                ? `${melhorThroughput.num_workers} workers (#${melhorThroughput.execucao_id})`
+                : undefined
+            }
+          />
+        </KpiGrid>
+      </section>
+
+      <Card className="border-emerald-200 bg-emerald-50">
+        <div className="flex items-start gap-3">
+          <Award className="h-6 w-6 text-emerald-600 shrink-0" aria-hidden />
+          <div>
+            <h3 className="text-base font-semibold text-emerald-900">
+              Melhor configuração: 2 workers
+            </h3>
+            <p className="text-sm text-emerald-800 mt-1 max-w-3xl">
+              No experimento de processamento paralelo dos microdados ENADE
+              (Fase 2), a configuração com <strong>2 workers</strong> obteve o
+              melhor equilíbrio entre tempo, throughput e uso de CPU.
+              {melhorSpeedup && (
+                <>
+                  {" "}Speedup observado de{" "}
+                  <strong>{formatSpeedup(melhorSpeedup.speedup)}</strong> com
+                  eficiência de{" "}
+                  <strong>{formatPercent(melhorSpeedup.eficiencia)}</strong>.
+                </>
+              )}
+              {" "}Ver detalhes em{" "}
+              <Link className="underline" to="/spd/comparativo">
+                Benchmark · Comparativo
+              </Link>
+              .
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader
+          title="Status dos dados carregados"
+          description="Carregamento direto da API. Atualizado em tempo real."
+        />
+        <QueryBoundary
+          query={anual}
+          isEmpty={(d) => d.length === 0}
+          loadingLabel="Carregando resumo anual…"
+        >
+          {(rows) => (
+            <ul className="text-sm grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+              {rows.map((r) => (
+                <li
+                  key={r.nu_ano}
+                  className="rounded-md border border-academia-100 px-3 py-2"
+                >
+                  <div className="text-xs text-academia-500">
+                    Edição {r.nu_ano}
+                  </div>
+                  <div className="font-semibold">{formatInt(r.total_registros)} reg.</div>
+                  <div className="text-xs text-academia-600">
+                    média {formatDecimal(r.media_geral, 2)}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </QueryBoundary>
+      </Card>
+    </PageContainer>
+  );
+}

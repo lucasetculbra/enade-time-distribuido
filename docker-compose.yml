@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: enade_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-enade_db}
+      POSTGRES_USER: ${POSTGRES_USER:-enade_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-enade_password}
+      # Locale brasileiro pra ordenação de UF/regiões ficar correta
+      LANG: pt_BR.UTF-8
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - enade_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-enade_user} -d ${POSTGRES_DB:-enade_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  enade_pgdata:
+    name: enade_pgdata

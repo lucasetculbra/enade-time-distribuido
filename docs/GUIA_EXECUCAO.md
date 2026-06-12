@@ -1,0 +1,247 @@
+# Guia de execução — ENADE-Time Distribuído
+
+Passo a passo completo para rodar o projeto do zero. Os comandos assumem
+**PowerShell** no Windows e o diretório `C:\Projetos\ENADE`.
+
+## Pré-requisitos
+
+- **Docker Desktop** rodando (para o PostgreSQL)
+- **Python 3.13** (já existe `.venv\` no projeto)
+- **Node.js ≥ 20** (testado com Node 24)
+- **Portas livres:** 5432 (Postgres), 8000 (API), 5173 (frontend dev), 3000 (frontend preview)
+
+---
+
+## 1. Subir o PostgreSQL
+
+```powershell
+cd C:\Projetos\ENADE
+docker compose up -d postgres
+docker compose ps
+```
+
+Esperado em `docker compose ps`:
+- Container `enade_postgres` no estado `Up` e `(healthy)`.
+- Porta `5432->5432` mapeada.
+
+> Variáveis de ambiente padrão (em `.env.example` / `docker-compose.yml`):
+> `POSTGRES_DB=enade_db`, `POSTGRES_USER=enade_user`,
+> `POSTGRES_PASSWORD=enade_password`.
+
+---
+
+## 2. Validar o banco
+
+Ative o ambiente virtual e rode o validador:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python scripts\07_validar_banco.py
+```
+
+Esperado: o script reporta **24.967 linhas** em `fato_enade` e confirma
+presença das dimensões e tabelas de benchmark.
+
+### Primeira execução (banco vazio)
+
+Se for a primeira subida do container (volume novo), criar schema + carga:
+
+```powershell
+python scripts\05_criar_schema_postgres.py
+python scripts\06_carregar_dados_postgres.py
+python scripts\07_validar_banco.py
+```
+
+> Os scripts 01–04 reprocessam os microdados brutos. Não é necessário
+> rodá-los novamente — os CSVs já estão consolidados em
+> `dados_processados\`.
+
+### (Opcional) Re-rodar benchmark da Fase 2
+
+```powershell
+python scripts\10_rodar_suite_benchmark.py
+```
+
+> **Importante:** rode com o projeto **fora do OneDrive** para evitar
+> contenção de I/O com a sincronização. Esta é a razão pela qual as
+> execuções de id 1, 2 e 3 ficam ocultas na API por padrão (foram
+> testes de ambiente). Ver
+> [`RESULTADOS_BENCHMARK.md`](RESULTADOS_BENCHMARK.md).
+
+---
+
+## 3. Subir a API (FastAPI)
+
+```powershell
+# venv já ativo
+pip install -r api\requirements.txt      # primeira vez apenas
+python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Testar:
+
+```powershell
+Invoke-RestMethod http://localhost:8000/api/health
+Invoke-RestMethod http://localhost:8000/api/benchmark/comparativo
+```
+
+URLs úteis:
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+- OpenAPI JSON: http://localhost:8000/openapi.json
+
+---
+
+## 4. Subir o frontend (em outro terminal)
+
+```powershell
+cd C:\Projetos\ENADE\frontend
+npm install                              # primeira vez apenas
+npm run dev                              # http://localhost:5173
+```
+
+### Build de produção servido localmente
+
+```powershell
+npm run build
+npm run preview -- --host 0.0.0.0 --port 3000
+```
+
+Após `npm run build`, o conteúdo estático fica em `frontend\dist\`.
+
+URLs:
+- Dev (HMR): http://localhost:5173
+- Preview (build): http://localhost:3000
+
+---
+
+## 5. Ordem completa (resumo)
+
+```powershell
+# Terminal 1 — banco
+cd C:\Projetos\ENADE
+docker compose up -d postgres
+docker compose ps
+.\.venv\Scripts\Activate.ps1
+python scripts\07_validar_banco.py
+
+# Terminal 1 (continua) — API
+pip install -r api\requirements.txt
+python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+# Terminal 2 — frontend
+cd C:\Projetos\ENADE\frontend
+npm install
+npm run dev
+```
+
+---
+
+## Troubleshooting
+
+### Docker não está rodando
+
+**Sintoma:** `docker compose up` falha com `Cannot connect to the Docker daemon`.
+
+**Solução:**
+1. Abrir o Docker Desktop e aguardar o tray icon ficar verde.
+2. Rodar `docker version` para confirmar.
+3. Em alguns hosts: reiniciar o serviço `com.docker.service` ou logout/login.
+
+### Postgres `unhealthy` ou não aceita conexão
+
+```powershell
+docker compose logs postgres --tail 50
+docker exec enade_postgres pg_isready -U enade_user -d enade_db
+```
+
+Se o container não inicializou o banco corretamente, **com cuidado**:
+remover o volume e subir de novo (perde dados — só faça se for a
+primeira subida e ainda não houver dados úteis).
+
+### API offline no frontend (badge vermelho no header)
+
+1. Confirmar que `uvicorn` está rodando: visitar http://localhost:8000/docs.
+2. Confirmar que `frontend\.env.development` aponta para
+   `VITE_API_BASE_URL=http://localhost:8000`.
+3. Confirmar que não há outra aplicação ocupando a porta 8000:
+   `Get-NetTCPConnection -LocalPort 8000`.
+4. Reiniciar o dev server do frontend após mudar `.env`:
+   `Ctrl+C` e `npm run dev` novamente.
+
+### CORS bloqueado (Network tab mostra erro CORS no preview)
+
+A API libera CORS apenas para `http://localhost:5173` (dev) e
+`http://localhost:3000` (preview). Se você rodar o preview em outra
+porta, há duas saídas:
+
+- **Recomendada:** rodar `npm run preview -- --host 0.0.0.0 --port 3000`
+  (mantém origin já permitida).
+- **Alternativa:** ajustar `CORS_ORIGINS` no `.env` da API (variável de
+  ambiente lida em `api/settings.py`) e reiniciar o uvicorn.
+
+> Não comitar credenciais ou origens de produção no repositório.
+
+### Porta 5173 ou 3000 já está ocupada
+
+```powershell
+# Descobrir o processo
+Get-NetTCPConnection -LocalPort 5173 | Select-Object OwningProcess
+Get-Process -Id <PID>
+```
+
+- Encerrar o processo conflitante, ou
+- Rodar em outra porta: `npm run dev -- --port 5174`. Se mudar a porta
+  do frontend, ajustar `CORS_ORIGINS` na API conforme acima.
+
+### API rodando, mas o frontend exibe gráficos vazios
+
+1. Abrir o DevTools (F12) → Network → recarregar a página.
+2. Ver se as chamadas `/api/...` retornam 200. Se retornarem CORS error,
+   ver seção CORS acima.
+3. Se retornarem 404 em `/api/...`: confirmar prefixo `/api` no router
+   da FastAPI (deve estar; é o caso atual).
+4. Conferir `/api/health` direto no navegador. Se OK, é problema do
+   frontend → reiniciar `npm run dev`.
+
+### `npm run build` com aviso "chunk size > 500 kB"
+
+Aviso esperado por causa do Recharts e do dataset de leitura. **Não é
+um erro** — o build passa normalmente. Ações possíveis (não obrigatórias
+para a entrega):
+
+- Configurar `build.chunkSizeWarningLimit` em `vite.config.ts`.
+- Code-splitting por rota com `React.lazy` + `Suspense`.
+
+Ver [`PROXIMOS_PASSOS.md`](PROXIMOS_PASSOS.md).
+
+### `npm audit` reportando vulnerabilidades
+
+Mensagens de auditoria são informativas e geralmente referem-se a
+dependências transitivas de ferramentas de build (Vite, etc.) em modo
+de desenvolvimento, **sem exposição em produção** deste projeto local.
+
+**Não rodar `npm audit fix --force`** — pode quebrar versões fixadas em
+`package.json`.
+
+### Recharts deprecated warning
+
+Recharts 2.x emite avisos de deprecação para componentes que terão API
+revista na v3. O dashboard funciona normalmente em v2.13. Atualização
+para v3 está em [`PROXIMOS_PASSOS.md`](PROXIMOS_PASSOS.md) e **não deve
+ser feita durante a janela da entrega**.
+
+### `python scripts\07_validar_banco.py` falha com `ModuleNotFoundError`
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+pip install psycopg2-binary pandas psutil
+```
+
+Confirmar que o prompt mostra `(.venv)` antes de rodar Python.
+
+### Frontend não encontra `lucide-react`/`react-router-dom` no editor
+
+Diagnósticos do tipo `Cannot find module 'X'` no VS Code antes de
+`npm install` são esperados — desaparecem após a instalação das
+dependências.

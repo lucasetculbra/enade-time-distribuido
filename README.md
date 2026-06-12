@@ -1,0 +1,186 @@
+# ENADE-Time Distribuído
+
+**Sistema Paralelo de Análise Longitudinal dos Microdados do ENADE**
+
+Projeto acadêmico da disciplina de **Sistemas Paralelos e Distribuídos (SPD)**.
+Integra um pipeline ETL paralelo em Python sobre os microdados oficiais do
+ENADE (INEP), com banco PostgreSQL, API FastAPI read-only e dashboard React
+para visualização longitudinal e dos resultados do experimento de paralelismo.
+
+> Diretório oficial do projeto: **`C:\Projetos\ENADE`**.
+> A cópia antiga em OneDrive é apenas backup informal e **não deve** ser
+> usada para execução (gera contenção de I/O nos benchmarks).
+
+---
+
+## Objetivo acadêmico
+
+1. **Aplicar conceitos de paralelismo** (Lei de Amdahl, speedup, eficiência,
+   throughput) a um cenário real de processamento de dados públicos.
+2. **Construir um pipeline completo** — desde leitura dos arquivos brutos
+   do INEP até um dashboard navegável — demonstrando integração entre
+   camadas de dados, serviços HTTP e interface.
+3. **Mensurar empiricamente** o ganho de paralelismo do ETL com diferentes
+   números de workers, identificando o ponto ótimo no hardware disponível.
+
+**Recorte do estudo:**
+- Cursos de Computação: `CO_GRUPO ∈ {40, 4004}` (Ciência da Computação e
+  Sistemas de Informação).
+- Regiões: Norte e Nordeste (`CO_REGIAO_CURSO ∈ {1, 2}`).
+- Edições do ENADE: 2005, 2008, 2011, 2014, 2017, 2021.
+- Total consolidado em `fato_enade`: **24.967 registros**.
+
+---
+
+## Stack
+
+| Camada | Tecnologia |
+|---|---|
+| Linguagem do ETL/benchmark | Python 3.13 (`multiprocessing`, `pandas`, `psycopg2`, `psutil`) |
+| Banco de dados | PostgreSQL 16 (Docker Compose) |
+| Orquestração local | Docker Compose |
+| API | FastAPI + Pydantic v2 + psycopg2 (ThreadedConnectionPool) |
+| Frontend | React 18 + TypeScript + Vite |
+| Cache HTTP/estado | TanStack Query 5 |
+| Gráficos | Recharts |
+| Estilo | Tailwind CSS |
+| Roteamento | React Router 6 |
+
+---
+
+## Estrutura de pastas
+
+```
+C:\Projetos\ENADE\
+├── README.md                  ← este arquivo
+├── docker-compose.yml         ← sobe o PostgreSQL 16
+├── .env.example               ← template de variáveis do banco
+├── docs/                      ← documentação acadêmica da Fase 5
+│   ├── README.md
+│   ├── GUIA_EXECUCAO.md
+│   ├── ARQUITETURA.md
+│   ├── RESULTADOS_BENCHMARK.md
+│   ├── EVIDENCIAS_TESTES.md
+│   ├── GUIA_APRESENTACAO.md
+│   ├── LIMPEZA_SUGERIDA.md
+│   └── PROXIMOS_PASSOS.md
+├── scripts/                   ← 10 scripts numerados (Fases 1 e 2)
+│   ├── 01_inspecionar_estrutura.py
+│   ├── 02_processar_microdados_enade.py
+│   ├── 03_gerar_bases_analise.py
+│   ├── 03_validar_csvs.py
+│   ├── 04_gerar_graficos_e_relatorio.py
+│   ├── 05_criar_schema_postgres.py
+│   ├── 06_carregar_dados_postgres.py
+│   ├── 07_validar_banco.py
+│   ├── 08_benchmark_sequencial.py
+│   ├── 09_benchmark_paralelo.py
+│   └── 10_rodar_suite_benchmark.py
+├── etl/                       ← módulo auxiliar dos scripts de benchmark
+├── api/                       ← FastAPI read-only (Fase 3)
+│   ├── main.py
+│   ├── settings.py
+│   ├── database.py
+│   ├── dependencies.py
+│   ├── requirements.txt
+│   ├── routers/  repositories/  schemas/
+├── frontend/                  ← Dashboard React/Vite (Fase 4)
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── tailwind.config.ts
+│   ├── NOTAS_ORGANIZACAO.md
+│   └── src/  (api, hooks, components, pages, …)
+├── dados_processados/         ← CSVs filtrados/consolidados (entrada do COPY)
+├── microdados_enade_*/        ← arquivos brutos do INEP (somente leitura)
+└── .venv/                     ← virtualenv Python local (recriável)
+```
+
+---
+
+## Como rodar o projeto completo
+
+> Roteiro resumido. Versão completa com troubleshooting em
+> [`docs/GUIA_EXECUCAO.md`](docs/GUIA_EXECUCAO.md).
+
+**Pré-requisitos:** Docker Desktop, Python 3.13, Node.js ≥ 20.
+
+### 1. Subir o PostgreSQL
+
+```powershell
+cd C:\Projetos\ENADE
+docker compose up -d postgres
+docker compose ps
+```
+
+### 2. Validar o banco (deve reportar 24.967 linhas em `fato_enade`)
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python scripts\07_validar_banco.py
+```
+
+> Se o banco estiver vazio (primeira execução), rode antes:
+> `python scripts\05_criar_schema_postgres.py` e
+> `python scripts\06_carregar_dados_postgres.py`.
+
+### 3. Subir a API (FastAPI)
+
+```powershell
+# venv já ativo
+pip install -r api\requirements.txt   # primeira vez apenas
+python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### 4. Subir o frontend (em outro terminal)
+
+```powershell
+cd C:\Projetos\ENADE\frontend
+npm install      # primeira vez apenas
+npm run dev      # http://localhost:5173
+```
+
+Para o build de produção servido localmente:
+```powershell
+npm run build
+npm run preview -- --host 0.0.0.0 --port 3000
+```
+
+---
+
+## URLs locais
+
+| Recurso | URL |
+|---|---|
+| API (FastAPI) | http://localhost:8000 |
+| Swagger UI | http://localhost:8000/docs |
+| Health da API | http://localhost:8000/api/health |
+| Frontend (dev) | http://localhost:5173 |
+| Frontend (preview/build) | http://localhost:3000 |
+| PostgreSQL | localhost:5432 (db `enade_db`, user `enade_user`) |
+
+---
+
+## Fases concluídas
+
+| Fase | Descrição | Status |
+|---|---|---|
+| 1 | Schema PostgreSQL + carga do CSV consolidado | concluída |
+| 2 | Benchmark sequencial × paralelo (2 e 4 workers) | concluída |
+| 3 | API FastAPI read-only | concluída |
+| 4 | Dashboard React/Vite | concluída |
+| 5 | Empacotamento e documentação final | **atual** |
+
+Próximos passos (não implementados nesta entrega): ver
+[`docs/PROXIMOS_PASSOS.md`](docs/PROXIMOS_PASSOS.md).
+
+---
+
+## Documentação
+
+Consulte [`docs/README.md`](docs/README.md) para o índice completo.
+Principais documentos:
+
+- **[Guia de execução passo a passo](docs/GUIA_EXECUCAO.md)** — do zero ao dashboard.
+- **[Arquitetura](docs/ARQUITETURA.md)** — camadas, fluxos e decisões técnicas.
+- **[Resultados do benchmark](docs/RESULTADOS_BENCHMARK.md)** — números oficiais da Fase 2.
+- **[Guia de apresentação](docs/GUIA_APRESENTACAO.md)** — roteiro oral de 8–12 min.

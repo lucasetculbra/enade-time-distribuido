@@ -1,0 +1,29 @@
+# Apresentação (não versionada)
+apresentacao/
+
+# Dados brutos do INEP (~7 GB — acima dos limites do GitHub;
+# baixáveis em gov.br/inep; o pipeline reproduz a partir de dados_processados/)
+microdados_enade_*/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Node (o frontend/.gitignore cobre o subdiretório; reforço na raiz)
+node_modules/
+frontend/dist/
+
+# Ambiente / segredos
+.env
+.env.local
+.env.production
+
+# Claude Code (configuração local)
+.claude/
+
+# SO / editor
+.DS_Store
+Thumbs.db
+*.log

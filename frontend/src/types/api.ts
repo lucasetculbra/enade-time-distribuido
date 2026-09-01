@@ -53,6 +53,8 @@ export interface ResumoAnual {
   media_min: number | null;
   media_max: number | null;
   desvio_padrao: number | null;
+  media_geral_ger: number | null;
+  media_geral_ce: number | null;
 }
 
 export interface ResumoRegiao {
@@ -63,6 +65,8 @@ export interface ResumoRegiao {
   media_min: number | null;
   media_max: number | null;
   desvio_padrao: number | null;
+  media_geral_ger: number | null;
+  media_geral_ce: number | null;
 }
 
 export interface ResumoUF {
@@ -75,6 +79,8 @@ export interface ResumoUF {
   media_min: number | null;
   media_max: number | null;
   desvio_padrao: number | null;
+  media_geral_ger: number | null;
+  media_geral_ce: number | null;
 }
 
 export interface ResumoIES {
@@ -84,6 +90,8 @@ export interface ResumoIES {
   co_uf_curso: number;
   total_registros: number;
   media_geral: number | null;
+  media_geral_ger: number | null;
+  media_geral_ce: number | null;
 }
 
 export interface Registro {
@@ -99,6 +107,8 @@ export interface Registro {
   co_uf_curso: number;
   co_regiao_curso: number;
   media_nt_fg: number | null;
+  media_nt_ger: number | null;
+  media_nt_ce: number | null;
 }
 
 export interface PaginatedResponse<T> {

@@ -5,6 +5,12 @@ apresentacao/
 # baixáveis em gov.br/inep; o pipeline reproduz a partir de dados_processados/)
 microdados_enade_*/
 
+# Backups com timestamp gerados pelos utilitários de tools/ (recriáveis)
+dados_processados/*.backup_*.csv
+
+# Rede de segurança da migração (pg_dump, CSVs de benchmark, golden JSONs)
+backups/
+
 # Python
 .venv/
 __pycache__/

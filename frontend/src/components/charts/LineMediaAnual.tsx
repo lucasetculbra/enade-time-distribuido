@@ -26,8 +26,8 @@ export function LineMediaAnual({ data }: { data: ResumoAnual[] }) {
         />
         <Line
           type="monotone"
-          dataKey="media_geral"
-          name="Média ENADE"
+          dataKey="media_geral_ger"
+          name="Média NT GER"
           stroke={CHART_COLORS.paralelo}
           strokeWidth={2.5}
           dot={{ r: 4 }}

@@ -37,8 +37,8 @@ export function BarMediaRegiao({ data }: { data: ResumoRegiao[] }) {
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Bar
           yAxisId="left"
-          dataKey="media_geral"
-          name="Média ENADE"
+          dataKey="media_geral_ger"
+          name="Média NT GER"
           fill={CHART_COLORS.paralelo}
         />
         <Bar

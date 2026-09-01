@@ -15,8 +15,8 @@ export default function EnadeRegional() {
         <>
           <Card>
             <CardHeader
-              title="Média ENADE por região"
-              description="Comparação Norte vs. Nordeste — médias da prova FG e volume de registros."
+              title="Média Nota Geral por região"
+              description="Comparação Norte vs. Nordeste — médias da Nota Geral (NT GER) e volume de registros."
             />
             <BarMediaRegiao data={rows} />
           </Card>
@@ -27,10 +27,12 @@ export default function EnadeRegional() {
                 <tr className="text-left">
                   <th className="px-2 py-2">Região</th>
                   <th className="px-2 py-2 text-right">Registros</th>
-                  <th className="px-2 py-2 text-right">Média</th>
-                  <th className="px-2 py-2 text-right">Mínima</th>
-                  <th className="px-2 py-2 text-right">Máxima</th>
-                  <th className="px-2 py-2 text-right">Desvio-padrão</th>
+                  <th className="px-2 py-2 text-right">Média FG</th>
+                  <th className="px-2 py-2 text-right">Mínima FG</th>
+                  <th className="px-2 py-2 text-right">Máxima FG</th>
+                  <th className="px-2 py-2 text-right">Desvio-padrão FG</th>
+                  <th className="px-2 py-2 text-right">Média CE</th>
+                  <th className="px-2 py-2 text-right">Média GER</th>
                 </tr>
               </thead>
               <tbody>
@@ -42,6 +44,8 @@ export default function EnadeRegional() {
                     <td className="px-2 py-2 text-right">{formatDecimal(r.media_min, 2)}</td>
                     <td className="px-2 py-2 text-right">{formatDecimal(r.media_max, 2)}</td>
                     <td className="px-2 py-2 text-right">{formatDecimal(r.desvio_padrao, 2)}</td>
+                    <td className="px-2 py-2 text-right">{formatDecimal(r.media_geral_ce, 2)}</td>
+                    <td className="px-2 py-2 text-right">{formatDecimal(r.media_geral_ger, 2)}</td>
                   </tr>
                 ))}
               </tbody>

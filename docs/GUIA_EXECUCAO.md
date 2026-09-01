@@ -63,20 +63,37 @@ python scripts\10_rodar_suite_benchmark.py
 ```
 
 > **Importante:** rode com o projeto **fora do OneDrive** para evitar
-> contenção de I/O com a sincronização. Esta é a razão pela qual as
-> execuções de id 1, 2 e 3 ficam ocultas na API por padrão (foram
-> testes de ambiente). Ver
+> contenção de I/O com a sincronização. Ver
 > [`RESULTADOS_BENCHMARK.md`](RESULTADOS_BENCHMARK.md).
+
+> A API **não oculta nenhuma execução por padrão**. Para esconder execuções
+> específicas de uma rodada, defina `BENCHMARK_IDS_EXCLUIR` (JSON) antes de
+> subir o uvicorn — ex.: `$env:BENCHMARK_IDS_EXCLUIR='[1,2,3]'`.
 
 ---
 
 ## 3. Subir a API (FastAPI)
+
+### Opção A — no host, com hot reload (recomendada para desenvolver)
 
 ```powershell
 # venv já ativo
 pip install -r api\requirements.txt      # primeira vez apenas
 python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
+
+### Opção B — em container (Fase 5)
+
+```powershell
+cd C:\Projetos\ENADE
+docker compose --profile api up -d --build
+docker compose ps
+```
+
+Sobe `enade_postgres` **e** `enade_api` na mesma porta 8000. O serviço `api`
+fica atrás de um profile, então `docker compose up -d postgres` continua
+subindo só o banco. Sem hot reload — rebuild após alterar o código:
+`docker compose --profile api up -d --build`.
 
 Testar:
 

@@ -24,8 +24,10 @@ para visualização longitudinal e dos resultados do experimento de paralelismo.
    números de workers, identificando o ponto ótimo no hardware disponível.
 
 **Recorte do estudo:**
-- Cursos de Computação: `CO_GRUPO ∈ {40, 4004}` (Ciência da Computação e
-  Sistemas de Informação).
+- Cursos de Computação: `CO_GRUPO ∈ {40, 4004}`. É o **mesmo curso** — o INEP
+  mudou o código entre ciclos (40 em 2005/2008, 4004 de 2011 em diante), e o
+  pipeline trata os dois como equivalentes. Detalhes em
+  [`docs/DICIONARIO_VARIAVEIS.md`](docs/DICIONARIO_VARIAVEIS.md).
 - Regiões: Norte e Nordeste (`CO_REGIAO_CURSO ∈ {1, 2}`).
 - Edições do ENADE: 2005, 2008, 2011, 2014, 2017, 2021.
 - Total consolidado em `fato_enade`: **24.967 registros**.
@@ -53,7 +55,7 @@ para visualização longitudinal e dos resultados do experimento de paralelismo.
 ```
 C:\Projetos\ENADE\
 ├── README.md                  ← este arquivo
-├── docker-compose.yml         ← sobe o PostgreSQL 16
+├── docker-compose.yml         ← PostgreSQL 16 + serviço opcional da API
 ├── .env.example               ← template de variáveis do banco
 ├── docs/                      ← documentação acadêmica da Fase 5
 │   ├── README.md
@@ -64,7 +66,7 @@ C:\Projetos\ENADE\
 │   ├── GUIA_APRESENTACAO.md
 │   ├── LIMPEZA_SUGERIDA.md
 │   └── PROXIMOS_PASSOS.md
-├── scripts/                   ← 10 scripts numerados (Fases 1 e 2)
+├── scripts/                   ← 11 scripts numerados (Fases 1, 2 e carga externa)
 │   ├── 01_inspecionar_estrutura.py
 │   ├── 02_processar_microdados_enade.py
 │   ├── 03_gerar_bases_analise.py
@@ -75,9 +77,11 @@ C:\Projetos\ENADE\
 │   ├── 07_validar_banco.py
 │   ├── 08_benchmark_sequencial.py
 │   ├── 09_benchmark_paralelo.py
-│   └── 10_rodar_suite_benchmark.py
+│   ├── 10_rodar_suite_benchmark.py
+│   └── 11_carregar_supabase.py    ← mesma carga, destino Supabase
 ├── etl/                       ← módulo auxiliar dos scripts de benchmark
 ├── api/                       ← FastAPI read-only (Fase 3)
+│   ├── Dockerfile
 │   ├── main.py
 │   ├── settings.py
 │   ├── database.py
@@ -125,10 +129,18 @@ python scripts\07_validar_banco.py
 
 ### 3. Subir a API (FastAPI)
 
+No host, com hot reload:
+
 ```powershell
 # venv já ativo
 pip install -r api\requirements.txt   # primeira vez apenas
 python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Ou em container (sobe banco + API de uma vez):
+
+```powershell
+docker compose --profile api up -d --build
 ```
 
 ### 4. Subir o frontend (em outro terminal)

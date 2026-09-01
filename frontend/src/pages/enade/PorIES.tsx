@@ -17,7 +17,7 @@ export default function EnadePorIES() {
     <Card>
       <CardHeader
         title="Ranking de IES"
-        description="IES ordenadas por média ENADE (NT FG), com filtro mínimo de cursos para reduzir ruído de amostras pequenas."
+        description="IES ordenadas por Nota Geral (NT GER), com filtro mínimo de cursos para reduzir ruído de amostras pequenas."
         action={
           <div className="flex items-end gap-3">
             <label className="text-xs text-academia-700">

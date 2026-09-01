@@ -18,6 +18,8 @@ export function RegistrosTable({ items }: { items: Registro[] }) {
             <th className="px-3 py-2 text-right font-medium">UF</th>
             <th className="px-3 py-2 text-right font-medium">Região</th>
             <th className="px-3 py-2 text-right font-medium">Média NT FG</th>
+            <th className="px-3 py-2 text-right font-medium">Média NT CE</th>
+            <th className="px-3 py-2 text-right font-medium">Média NT GER</th>
           </tr>
         </thead>
         <tbody>
@@ -35,6 +37,12 @@ export function RegistrosTable({ items }: { items: Registro[] }) {
               <td className="px-3 py-1.5 text-right">{r.co_regiao_curso}</td>
               <td className="px-3 py-1.5 text-right font-medium">
                 {formatDecimal(r.media_nt_fg, 2)}
+              </td>
+              <td className="px-3 py-1.5 text-right">
+                {formatDecimal(r.media_nt_ce, 2)}
+              </td>
+              <td className="px-3 py-1.5 text-right">
+                {formatDecimal(r.media_nt_ger, 2)}
               </td>
             </tr>
           ))}

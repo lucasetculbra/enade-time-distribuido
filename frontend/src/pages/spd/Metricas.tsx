@@ -21,7 +21,7 @@ export default function SpdMetricas() {
               checked={!apenasValidas}
               onChange={(e) => setApenasValidas(!e.target.checked)}
             />
-            Mostrar execuções inválidas
+            Mostrar execuções ocultas
           </label>
         }
       />

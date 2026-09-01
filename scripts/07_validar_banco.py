@@ -33,6 +33,11 @@ ANOS_ESPERADOS = {2005, 2008, 2011, 2014, 2017, 2021}
 CODIGOS_COMPUTACAO = {40, 4004}
 REGIOES_ESPERADAS = {1, 2}
 
+# Notas: as três colunas têm o mesmo padrão de preenchimento (média por curso).
+NOTAS = ["media_nt_fg", "media_nt_ger", "media_nt_ce"]
+NAO_NULOS_NOTA_ESPERADO = 24_775
+NULOS_NOTA_ESPERADO = 192
+
 problemas: list[str] = []
 
 
@@ -110,6 +115,60 @@ def main() -> int:
               f"MAX(media_nt_fg) = {mx} <= 100",
               f"MAX(media_nt_fg) = {mx} > 100")
 
+        # 3b) as três notas: contagem de não nulos / nulos + escala
+        secao("3b) Notas: media_nt_fg, media_nt_ger, media_nt_ce")
+        for nota in NOTAS:
+            cur.execute(f"""
+                SELECT COUNT({nota}) AS nao_nulos,
+                       COUNT(*) - COUNT({nota}) AS nulos,
+                       MIN({nota}), MAX({nota})
+                FROM fato_enade;
+            """)
+            nao_nulos, nulos, mn_n, mx_n = cur.fetchone()
+            print(f"  {nota:<13} não_nulos={nao_nulos}  nulos={nulos}  "
+                  f"min={mn_n}  max={mx_n}")
+            check(nao_nulos == NAO_NULOS_NOTA_ESPERADO,
+                  f"{nota}: {nao_nulos} não nulos == {NAO_NULOS_NOTA_ESPERADO}",
+                  f"{nota}: {nao_nulos} não nulos (esperado {NAO_NULOS_NOTA_ESPERADO})")
+            check(nulos == NULOS_NOTA_ESPERADO,
+                  f"{nota}: {nulos} nulos == {NULOS_NOTA_ESPERADO}",
+                  f"{nota}: {nulos} nulos (esperado {NULOS_NOTA_ESPERADO})")
+            check(mn_n is None or mn_n >= 0,
+                  f"{nota}: MIN = {mn_n} >= 0",
+                  f"{nota}: MIN = {mn_n} < 0")
+            check(mx_n is None or mx_n <= 100,
+                  f"{nota}: MAX = {mx_n} <= 100",
+                  f"{nota}: MAX = {mx_n} > 100")
+
+        # 3c) coerência dos nulos: as linhas com media_nt_fg nula devem ser
+        # exatamente as mesmas com media_nt_ger e media_nt_ce nulas.
+        secao("3c) Coerência dos nulos entre as três notas")
+        cur.execute("""
+            SELECT
+              SUM(CASE WHEN (media_nt_fg IS NULL) <> (media_nt_ger IS NULL)
+                       THEN 1 ELSE 0 END) AS difere_ger,
+              SUM(CASE WHEN (media_nt_fg IS NULL) <> (media_nt_ce IS NULL)
+                       THEN 1 ELSE 0 END) AS difere_ce,
+              COUNT(*) FILTER (WHERE media_nt_fg IS NULL
+                                 AND media_nt_ger IS NULL
+                                 AND media_nt_ce IS NULL) AS nulos_nas_tres
+            FROM fato_enade;
+        """)
+        difere_ger, difere_ce, nulos_tres = cur.fetchone()
+        difere_ger = int(difere_ger or 0)
+        difere_ce = int(difere_ce or 0)
+        print(f"  divergências fg/ger={difere_ger}  fg/ce={difere_ce}  "
+              f"nulos nas três simultaneamente={nulos_tres}")
+        check(difere_ger == 0,
+              "nulos de media_nt_ger coincidem com media_nt_fg",
+              f"{difere_ger} linhas com nulidade divergente fg/ger")
+        check(difere_ce == 0,
+              "nulos de media_nt_ce coincidem com media_nt_fg",
+              f"{difere_ce} linhas com nulidade divergente fg/ce")
+        check(nulos_tres == NULOS_NOTA_ESPERADO,
+              f"{nulos_tres} linhas com as três notas nulas == {NULOS_NOTA_ESPERADO}",
+              f"{nulos_tres} linhas com as três notas nulas (esperado {NULOS_NOTA_ESPERADO})")
+
         # 4) integridade referencial
         secao("4) Integridade referencial (JOIN com dims)")
         cur.execute("""
@@ -185,7 +244,8 @@ def main() -> int:
         esperadas = {
             "id", "nu_ano", "co_curso", "co_ies", "co_categad",
             "co_orgacad", "co_grupo", "co_modalidade", "co_munic_curso",
-            "co_uf_curso", "co_regiao_curso", "media_nt_fg",
+            "co_uf_curso", "co_regiao_curso",
+            "media_nt_fg", "media_nt_ger", "media_nt_ce",
         }
         encontradas = {c[0] for c in cols}
         check(esperadas.issubset(encontradas),

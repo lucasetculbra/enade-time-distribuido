@@ -14,6 +14,8 @@ class ResumoAnual(BaseModel):
     media_min: float | None = None
     media_max: float | None = None
     desvio_padrao: float | None = None
+    media_geral_ger: float | None = None
+    media_geral_ce: float | None = None
 
 
 class ResumoRegiao(BaseModel):
@@ -26,6 +28,8 @@ class ResumoRegiao(BaseModel):
     media_min: float | None = None
     media_max: float | None = None
     desvio_padrao: float | None = None
+    media_geral_ger: float | None = None
+    media_geral_ce: float | None = None
 
 
 class ResumoUF(BaseModel):
@@ -40,6 +44,8 @@ class ResumoUF(BaseModel):
     media_min: float | None = None
     media_max: float | None = None
     desvio_padrao: float | None = None
+    media_geral_ger: float | None = None
+    media_geral_ce: float | None = None
 
 
 class ResumoIES(BaseModel):
@@ -51,6 +57,8 @@ class ResumoIES(BaseModel):
     co_uf_curso: int
     total_registros: int
     media_geral: float | None = None
+    media_geral_ger: float | None = None
+    media_geral_ce: float | None = None
 
 
 class Registro(BaseModel):
@@ -68,6 +76,8 @@ class Registro(BaseModel):
     co_uf_curso: int
     co_regiao_curso: int
     media_nt_fg: float | None = None
+    media_nt_ger: float | None = None
+    media_nt_ce: float | None = None
 
 
 class PaginatedResponse(BaseModel, Generic[T]):

@@ -29,7 +29,6 @@ import {
   formatPercent,
   formatSeconds,
   formatSpeedup,
-  formatThroughput,
 } from "@/lib/format";
 
 export default function Home() {
@@ -172,25 +171,34 @@ export default function Home() {
           <Award className="h-6 w-6 text-emerald-600 shrink-0" aria-hidden />
           <div>
             <h3 className="text-base font-semibold text-emerald-900">
-              Melhor configuração: 2 workers
+              {melhorSpeedup
+                ? `Melhor configuração da rodada carregada: ${melhorSpeedup.num_workers} workers`
+                : "Benchmark de processamento paralelo"}
             </h3>
             <p className="text-sm text-emerald-800 mt-1 max-w-3xl">
-              No experimento de processamento paralelo dos microdados ENADE
-              (Fase 2), a configuração com <strong>2 workers</strong> obteve o
-              melhor equilíbrio entre tempo, throughput e uso de CPU.
-              {melhorSpeedup && (
+              {melhorSpeedup ? (
                 <>
-                  {" "}Speedup observado de{" "}
-                  <strong>{formatSpeedup(melhorSpeedup.speedup)}</strong> com
+                  Na rodada de benchmark atualmente carregada no banco, a
+                  configuração com{" "}
+                  <strong>{melhorSpeedup.num_workers} workers</strong> obteve o
+                  melhor desempenho: speedup de{" "}
+                  <strong>{formatSpeedup(melhorSpeedup.speedup)}</strong> e
                   eficiência de{" "}
-                  <strong>{formatPercent(melhorSpeedup.eficiencia)}</strong>.
+                  <strong>{formatPercent(melhorSpeedup.eficiencia)}</strong>. A
+                  melhor configuração pode variar conforme a rodada (CPU, disco e
+                  processos em segundo plano).{" "}
+                </>
+              ) : (
+                <>
+                  A melhor configuração pode variar conforme a rodada (CPU, disco
+                  e condições da máquina).{" "}
                 </>
               )}
-              {" "}Ver detalhes em{" "}
+              Consulte{" "}
               <Link className="underline" to="/spd/comparativo">
                 Benchmark · Comparativo
-              </Link>
-              .
+              </Link>{" "}
+              para ver os resultados carregados no banco.
             </p>
           </div>
         </div>

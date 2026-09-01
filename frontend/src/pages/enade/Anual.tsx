@@ -23,20 +23,20 @@ export default function EnadeAnual() {
           const mediaGeral =
             rows.length === 0
               ? null
-              : rows.reduce((acc, r) => acc + (r.media_geral ?? 0), 0) /
-                rows.filter((r) => r.media_geral !== null).length;
+              : rows.reduce((acc, r) => acc + (r.media_geral_ger ?? 0), 0) /
+                rows.filter((r) => r.media_geral_ger !== null).length;
           const melhor = rows.reduce<typeof rows[number] | null>(
             (b, r) =>
-              r.media_geral !== null &&
-              (b === null || (r.media_geral ?? 0) > (b.media_geral ?? 0))
+              r.media_geral_ger !== null &&
+              (b === null || (r.media_geral_ger ?? 0) > (b.media_geral_ger ?? 0))
                 ? r
                 : b,
             null,
           );
           const pior = rows.reduce<typeof rows[number] | null>(
             (b, r) =>
-              r.media_geral !== null &&
-              (b === null || (r.media_geral ?? 100) < (b.media_geral ?? 100))
+              r.media_geral_ger !== null &&
+              (b === null || (r.media_geral_ger ?? 100) < (b.media_geral_ger ?? 100))
                 ? r
                 : b,
             null,
@@ -51,26 +51,26 @@ export default function EnadeAnual() {
                   value={formatInt(rows.length)}
                 />
                 <MetricCard
-                  label="Média geral"
+                  label="Média NT GER"
                   value={formatDecimal(mediaGeral, 2)}
                 />
                 <MetricCard
                   label="Melhor ano"
                   value={melhor ? String(melhor.nu_ano) : "—"}
                   hint={
-                    melhor ? `Média ${formatDecimal(melhor.media_geral, 2)}` : undefined
+                    melhor ? `Média ${formatDecimal(melhor.media_geral_ger, 2)}` : undefined
                   }
                 />
               </KpiGrid>
               <Card>
                 <CardHeader
-                  title="Média ENADE por ano"
-                  description="Variação longitudinal das médias da prova de formação geral (NT FG) ao longo das edições."
+                  title="Média Nota Geral (NT GER) por ano"
+                  description="Variação longitudinal das médias da Nota Geral (NT GER) ao longo das edições."
                 />
                 <LineMediaAnual data={rows} />
                 {pior && (
                   <p className="text-xs text-academia-500 mt-2">
-                    Menor média observada: {pior.nu_ano} ({formatDecimal(pior.media_geral, 2)}).
+                    Menor média observada: {pior.nu_ano} ({formatDecimal(pior.media_geral_ger, 2)}).
                   </p>
                 )}
               </Card>

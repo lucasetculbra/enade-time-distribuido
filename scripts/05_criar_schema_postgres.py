@@ -98,7 +98,11 @@ CREATE TABLE fato_enade (
     co_uf_curso       SMALLINT  NOT NULL REFERENCES dim_uf(co_uf),
     co_regiao_curso   SMALLINT  NOT NULL REFERENCES dim_regiao(co_regiao),
     media_nt_fg       NUMERIC(7,4) NULL,
-    CHECK (media_nt_fg IS NULL OR (media_nt_fg >= 0 AND media_nt_fg <= 100))
+    media_nt_ger      NUMERIC(7,4) NULL,
+    media_nt_ce       NUMERIC(7,4) NULL,
+    CHECK (media_nt_fg  IS NULL OR (media_nt_fg  >= 0 AND media_nt_fg  <= 100)),
+    CHECK (media_nt_ger IS NULL OR (media_nt_ger >= 0 AND media_nt_ger <= 100)),
+    CHECK (media_nt_ce  IS NULL OR (media_nt_ce  >= 0 AND media_nt_ce  <= 100))
 );
 
 CREATE INDEX idx_fato_ano        ON fato_enade(nu_ano);
@@ -197,9 +201,13 @@ INSERT INTO dim_uf (co_uf, sigla, nome, co_regiao) VALUES
     (28, 'SE', 'Sergipe',             2),
     (29, 'BA', 'Bahia',               2);
 
+-- Computação mudou de código entre ciclos do ENADE: 40 nas edições de
+-- 2005/2008 e 4004 de 2011 em diante. É o MESMO curso — os dois códigos
+-- nunca coexistem no mesmo ano. Os rótulos trazem o intervalo para o
+-- filtro do dashboard não exibir duas opções indistinguíveis.
 INSERT INTO dim_grupo (co_grupo, nome) VALUES
-    (40,   'Ciência da Computação'),
-    (4004, 'Ciência da Computação');
+    (40,   'Ciência da Computação (código 2005–2008)'),
+    (4004, 'Ciência da Computação (código 2011+)');
 
 INSERT INTO dim_categoria_adm (co_categad, nome) VALUES
     (1, 'Pública Federal'),

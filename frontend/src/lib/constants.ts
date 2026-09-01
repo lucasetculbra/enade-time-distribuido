@@ -13,3 +13,7 @@ export const CHART_COLORS = {
 } as const;
 
 export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 250] as const;
+
+// Limiar de amostra: abaixo deste n por ano/grupo, a estimativa é considerada
+// estatisticamente frágil e um alerta é exibido (Módulo 3 — Critério B).
+export const LIMIAR_AMOSTRA = 30;

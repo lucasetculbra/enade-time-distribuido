@@ -10,6 +10,7 @@ import EnadeRegional from "./pages/enade/Regional";
 import EnadePorUF from "./pages/enade/PorUF";
 import EnadePorIES from "./pages/enade/PorIES";
 import EnadeRegistros from "./pages/enade/Registros";
+import EnadeComparar from "./pages/enade/Comparar";
 
 import SpdLayout from "./pages/spd/SpdLayout";
 import SpdExecucoes from "./pages/spd/Execucoes";
@@ -28,6 +29,7 @@ export default function AppRoutes() {
         <Route path="regional" element={<EnadeRegional />} />
         <Route path="uf" element={<EnadePorUF />} />
         <Route path="ies" element={<EnadePorIES />} />
+        <Route path="comparar" element={<EnadeComparar />} />
         <Route path="registros" element={<EnadeRegistros />} />
       </Route>
 

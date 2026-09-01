@@ -13,7 +13,9 @@ export function RankingIES({ items }: { items: ResumoIES[] }) {
             <th className="px-3 py-2 text-right font-medium">Org. Acad.</th>
             <th className="px-3 py-2 text-right font-medium">UF (cód.)</th>
             <th className="px-3 py-2 text-right font-medium">Registros</th>
-            <th className="px-3 py-2 text-right font-medium">Média</th>
+            <th className="px-3 py-2 text-right font-medium">Média FG</th>
+            <th className="px-3 py-2 text-right font-medium">Média CE</th>
+            <th className="px-3 py-2 text-right font-medium">Média GER</th>
           </tr>
         </thead>
         <tbody>
@@ -28,8 +30,14 @@ export function RankingIES({ items }: { items: ResumoIES[] }) {
               <td className="px-3 py-2 text-right">{r.co_orgacad}</td>
               <td className="px-3 py-2 text-right">{r.co_uf_curso}</td>
               <td className="px-3 py-2 text-right">{formatInt(r.total_registros)}</td>
-              <td className="px-3 py-2 text-right font-semibold">
+              <td className="px-3 py-2 text-right">
                 {formatDecimal(r.media_geral, 2)}
+              </td>
+              <td className="px-3 py-2 text-right">
+                {formatDecimal(r.media_geral_ce, 2)}
+              </td>
+              <td className="px-3 py-2 text-right font-semibold">
+                {formatDecimal(r.media_geral_ger, 2)}
               </td>
             </tr>
           ))}

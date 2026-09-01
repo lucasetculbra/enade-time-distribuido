@@ -25,6 +25,7 @@ const ENADE_LINKS = [
   { to: "/enade/regional", label: "Por Região" },
   { to: "/enade/uf", label: "Por UF" },
   { to: "/enade/ies", label: "Ranking IES" },
+  { to: "/enade/comparar", label: "Comparar" },
   { to: "/enade/registros", label: "Registros" },
 ];
 

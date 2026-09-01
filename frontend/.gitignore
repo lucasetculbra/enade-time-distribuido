@@ -4,6 +4,9 @@ dist-ssr
 *.local
 .vite
 
+# Cache incremental do tsc (tsBuildInfoFile aponta para node_modules/.tmp/)
+*.tsbuildinfo
+
 # Logs
 npm-debug.log*
 yarn-debug.log*

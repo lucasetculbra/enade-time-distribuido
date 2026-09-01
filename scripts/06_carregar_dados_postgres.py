@@ -47,7 +47,7 @@ DB_CONFIG = {
 COLUNAS_DESTINO = [
     "nu_ano", "co_curso", "co_ies", "co_categad", "co_orgacad",
     "co_grupo", "co_modalidade", "co_munic_curso", "co_uf_curso",
-    "co_regiao_curso", "media_nt_fg",
+    "co_regiao_curso", "media_nt_fg", "media_nt_ger", "media_nt_ce",
 ]
 
 # Mapeamento CSV (upper) -> destino (lower). Schema do banco usa snake_case
@@ -63,6 +63,9 @@ COLUNAS_INTEIRAS_ORIGEM = [
     "CO_GRUPO", "CO_MODALIDADE", "CO_MUNIC_CURSO", "CO_UF_CURSO",
     "CO_REGIAO_CURSO",
 ]
+
+# Colunas de nota (float, escala 0-100, NUMERIC(7,4) no schema).
+COLUNAS_NOTAS_ORIGEM = ["MEDIA_NT_FG", "MEDIA_NT_GER", "MEDIA_NT_CE"]
 
 
 def parse_args() -> argparse.Namespace:
@@ -91,9 +94,10 @@ def preparar_buffer(df: pd.DataFrame) -> io.StringIO:
     for col in COLUNAS_INTEIRAS_ORIGEM:
         out[col] = pd.to_numeric(out[col], errors="coerce").astype("Int64")
 
-    # media_nt_fg permanece float; o float_format abaixo só afeta floats,
+    # notas permanecem float; o float_format abaixo só afeta floats,
     # e Int64 escreve como inteiro puro, ignorando float_format.
-    out["MEDIA_NT_FG"] = pd.to_numeric(out["MEDIA_NT_FG"], errors="coerce")
+    for col in COLUNAS_NOTAS_ORIGEM:
+        out[col] = pd.to_numeric(out[col], errors="coerce")
 
     buf = io.StringIO()
     out.to_csv(

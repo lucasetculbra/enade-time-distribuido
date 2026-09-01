@@ -13,7 +13,13 @@ class Settings(BaseSettings):
 
     api_port: int = 8000
 
-    benchmark_ids_excluir: list[int] = Field(default_factory=lambda: [1, 2, 3])
+    # Execuções de benchmark a ocultar por padrão (`?apenas_validas=true`).
+    # Vazio por padrão: os ids são um BIGSERIAL e voltam a 1 a cada
+    # `05_criar_schema_postgres.py --reset`, então uma lista fixa acaba
+    # escondendo justamente as execuções válidas da rodada atual.
+    # Para ocultar execuções inválidas de uma rodada específica, defina a
+    # variável de ambiente BENCHMARK_IDS_EXCLUIR (JSON), ex.: '[1,2,3]'.
+    benchmark_ids_excluir: list[int] = Field(default_factory=list)
     cors_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:5173",

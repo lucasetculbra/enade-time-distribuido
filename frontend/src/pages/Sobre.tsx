@@ -16,8 +16,9 @@ export default function Sobre() {
         />
         <ul className="text-sm text-academia-700 list-disc pl-5 space-y-1">
           <li>
-            <strong>Cursos:</strong> Ciência da Computação e Sistemas de
-            Informação (CO_GRUPO ∈ {"{40, 4004}"}).
+            <strong>Cursos:</strong> Computação (CO_GRUPO ∈ {"{40, 4004}"}).
+            São dois códigos para o <em>mesmo</em> curso: o INEP usou 40 nas
+            edições de 2005 e 2008 e passou a 4004 a partir de 2011.
           </li>
           <li>
             <strong>Regiões:</strong> Norte e Nordeste (CO_REGIAO_CURSO ∈ {"{1, 2}"}).
@@ -139,11 +140,11 @@ export default function Sobre() {
             consumo pelo dashboard.
           </li>
           <li>
-            <strong>Fase 4 (atual):</strong> Dashboard React/Vite.
+            <strong>Fase 4 (concluída):</strong> Dashboard React/Vite.
           </li>
           <li>
-            <strong>Fase 5 (futura):</strong> Empacotamento Docker (Dockerfile
-            da API e do frontend, serviços no docker-compose).
+            <strong>Fase 5 (atual):</strong> Empacotamento e documentação
+            final — Dockerfile da API e serviço opcional no docker-compose.
           </li>
         </ul>
         <div className="mt-3 flex items-center gap-2 text-xs text-academia-500">

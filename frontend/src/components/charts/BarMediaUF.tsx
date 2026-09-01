@@ -14,7 +14,7 @@ import type { ResumoUF } from "@/types/api";
 
 export function BarMediaUF({ data }: { data: ResumoUF[] }) {
   const sorted = [...data].sort(
-    (a, b) => (b.media_geral ?? 0) - (a.media_geral ?? 0),
+    (a, b) => (b.media_geral_ger ?? 0) - (a.media_geral_ger ?? 0),
   );
 
   return (
@@ -41,8 +41,8 @@ export function BarMediaUF({ data }: { data: ResumoUF[] }) {
           contentStyle={{ borderRadius: 8 }}
         />
         <Bar
-          dataKey="media_geral"
-          name="Média ENADE"
+          dataKey="media_geral_ger"
+          name="Média NT GER"
           fill={CHART_COLORS.paralelo}
         />
       </BarChart>

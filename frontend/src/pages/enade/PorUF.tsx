@@ -15,8 +15,8 @@ export default function EnadePorUF() {
         <>
           <Card>
             <CardHeader
-              title="Média ENADE por UF"
-              description="Ranking horizontal de médias da prova FG por unidade federativa (escala 0–100). Use o filtro de região para focar."
+              title="Média Nota Geral por UF"
+              description="Ranking horizontal de médias da Nota Geral (NT GER) por unidade federativa (escala 0–100). Use o filtro de região para focar."
             />
             <BarMediaUF data={rows} />
           </Card>
@@ -31,10 +31,12 @@ export default function EnadePorUF() {
                     <th className="px-2 py-2">Nome</th>
                     <th className="px-2 py-2 text-right">Região</th>
                     <th className="px-2 py-2 text-right">Registros</th>
-                    <th className="px-2 py-2 text-right">Média</th>
-                    <th className="px-2 py-2 text-right">Mínima</th>
-                    <th className="px-2 py-2 text-right">Máxima</th>
-                    <th className="px-2 py-2 text-right">Desvio</th>
+                    <th className="px-2 py-2 text-right">Média FG</th>
+                    <th className="px-2 py-2 text-right">Mínima FG</th>
+                    <th className="px-2 py-2 text-right">Máxima FG</th>
+                    <th className="px-2 py-2 text-right">Desvio FG</th>
+                    <th className="px-2 py-2 text-right">Média CE</th>
+                    <th className="px-2 py-2 text-right">Média GER</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -48,6 +50,8 @@ export default function EnadePorUF() {
                       <td className="px-2 py-2 text-right">{formatDecimal(u.media_min, 2)}</td>
                       <td className="px-2 py-2 text-right">{formatDecimal(u.media_max, 2)}</td>
                       <td className="px-2 py-2 text-right">{formatDecimal(u.desvio_padrao, 2)}</td>
+                      <td className="px-2 py-2 text-right">{formatDecimal(u.media_geral_ce, 2)}</td>
+                      <td className="px-2 py-2 text-right">{formatDecimal(u.media_geral_ger, 2)}</td>
                     </tr>
                   ))}
                 </tbody>

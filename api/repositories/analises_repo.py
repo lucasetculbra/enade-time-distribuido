@@ -13,7 +13,9 @@ def resumo_anual(cursor: PgCursor, filtros: FiltrosAnalise) -> list[dict]:
             AVG(media_nt_fg)::float AS media_geral,
             MIN(media_nt_fg)::float AS media_min,
             MAX(media_nt_fg)::float AS media_max,
-            STDDEV(media_nt_fg)::float AS desvio_padrao
+            STDDEV(media_nt_fg)::float AS desvio_padrao,
+            AVG(media_nt_ger)::float AS media_geral_ger,
+            AVG(media_nt_ce)::float  AS media_geral_ce
         FROM fato_enade
         WHERE 1=1 {where}
         GROUP BY nu_ano
@@ -35,7 +37,9 @@ def resumo_regiao(cursor: PgCursor, filtros: FiltrosAnalise) -> list[dict]:
             AVG(f.media_nt_fg)::float AS media_geral,
             MIN(f.media_nt_fg)::float AS media_min,
             MAX(f.media_nt_fg)::float AS media_max,
-            STDDEV(f.media_nt_fg)::float AS desvio_padrao
+            STDDEV(f.media_nt_fg)::float AS desvio_padrao,
+            AVG(f.media_nt_ger)::float AS media_geral_ger,
+            AVG(f.media_nt_ce)::float  AS media_geral_ce
         FROM fato_enade f
         JOIN dim_regiao r ON f.co_regiao_curso = r.co_regiao
         WHERE 1=1 {where}
@@ -60,7 +64,9 @@ def resumo_uf(cursor: PgCursor, filtros: FiltrosAnalise) -> list[dict]:
             AVG(f.media_nt_fg)::float AS media_geral,
             MIN(f.media_nt_fg)::float AS media_min,
             MAX(f.media_nt_fg)::float AS media_max,
-            STDDEV(f.media_nt_fg)::float AS desvio_padrao
+            STDDEV(f.media_nt_fg)::float AS desvio_padrao,
+            AVG(f.media_nt_ger)::float AS media_geral_ger,
+            AVG(f.media_nt_ce)::float  AS media_geral_ce
         FROM fato_enade f
         JOIN dim_uf u ON f.co_uf_curso = u.co_uf
         WHERE 1=1 {where}
@@ -88,12 +94,14 @@ def resumo_ies(
             MIN(co_orgacad)::int AS co_orgacad,
             MIN(co_uf_curso)::int AS co_uf_curso,
             COUNT(*)::int AS total_registros,
-            AVG(media_nt_fg)::float AS media_geral
+            AVG(media_nt_fg)::float AS media_geral,
+            AVG(media_nt_ger)::float AS media_geral_ger,
+            AVG(media_nt_ce)::float  AS media_geral_ce
         FROM fato_enade
         WHERE 1=1 {where}
         GROUP BY co_ies
         HAVING COUNT(*) >= %(min_cursos)s
-        ORDER BY media_geral DESC NULLS LAST, total_registros DESC
+        ORDER BY media_geral_ger DESC NULLS LAST, total_registros DESC
         LIMIT %(limit)s
         """,
         params,
@@ -125,7 +133,9 @@ def listar_registros(
             id, nu_ano, co_curso, co_ies, co_categad, co_orgacad,
             co_grupo, co_modalidade, co_munic_curso,
             co_uf_curso, co_regiao_curso,
-            media_nt_fg::float AS media_nt_fg
+            media_nt_fg::float  AS media_nt_fg,
+            media_nt_ger::float AS media_nt_ger,
+            media_nt_ce::float  AS media_nt_ce
         FROM fato_enade
         WHERE 1=1 {where}
         ORDER BY id

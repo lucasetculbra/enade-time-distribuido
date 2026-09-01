@@ -1,0 +1,8 @@
+{
+  // Usa o TypeScript do projeto (5.9.3) em vez do embutido no VS Code.
+  // Sem isso o editor pode acusar erros que o `tsc` do projeto não reproduz —
+  // p.ex. TS6304/TS6310 ("composite/referenced project may not disable emit"),
+  // restrição que versões antigas do TS aplicavam a `composite` + `noEmit`.
+  "typescript.tsdk": "frontend/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}

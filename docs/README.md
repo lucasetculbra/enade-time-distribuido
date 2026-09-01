@@ -12,6 +12,10 @@ o pacote de entrega da **Fase 5** (empacotamento e documentação final).
 |---|---|---|
 | [GUIA_EXECUCAO.md](GUIA_EXECUCAO.md) | Quem vai **rodar** | Passo a passo do zero (Docker → banco → API → frontend) + troubleshooting completo |
 | [ARQUITETURA.md](ARQUITETURA.md) | Quem vai **entender** | Camadas, fluxo de dados, modelo de tabelas, decisões técnicas justificadas |
+| [DICIONARIO_VARIAVEIS.md](DICIONARIO_VARIAVEIS.md) | Quem vai **entender os dados** | Variável a variável: nome original por ano → forma harmonizada → mudanças entre ciclos |
+| [LOG_EXECUCAO_ETL.md](LOG_EXECUCAO_ETL.md) | Quem vai **auditar** | Registro das execuções do ETL e das alterações controladas na base consolidada |
+| [DESIGN_LOG.md](DESIGN_LOG.md) | Quem vai **entender as escolhas** | Decisões de projeto e alternativas descartadas, com justificativa |
+| [INTEGRACAO_ECOSSISTEMA.md](INTEGRACAO_ECOSSISTEMA.md) | Quem vai **integrar** | Como este módulo conversa com os demais módulos do projeto |
 | [RESULTADOS_BENCHMARK.md](RESULTADOS_BENCHMARK.md) | Quem vai **avaliar** | Números oficiais da Fase 2 (execuções #4, #5, #6), conclusão e explicação da Lei de Amdahl |
 | [EVIDENCIAS_TESTES.md](EVIDENCIAS_TESTES.md) | Quem vai **entregar** | Checklist com 14 prints a anexar, com comando e resultado esperado de cada um |
 | [GUIA_APRESENTACAO.md](GUIA_APRESENTACAO.md) | Quem vai **apresentar** | Roteiro oral de 8–12 min, falas-modelo, FAQ da banca |
@@ -45,4 +49,5 @@ o pacote de entrega da **Fase 5** (empacotamento e documentação final).
   — notas históricas de organização (consolidadas em
   `LIMPEZA_SUGERIDA.md`).
 - [`../api/`](../api/) — código-fonte da API (Swagger em runtime).
-- [`../scripts/`](../scripts/) — scripts 01 a 10 da pipeline.
+- [`../scripts/`](../scripts/) — scripts 01 a 11 da pipeline (11 = carga do
+  consolidado no Supabase, opcional).

@@ -12,8 +12,8 @@ export default function SpdExecucoes() {
   return (
     <Card>
       <CardHeader
-        title="Execuções de benchmark"
-        description="Cada linha representa uma execução completa do pipeline ETL (sequencial ou paralela). Execuções marcadas como inválidas na configuração da API (BENCHMARK_IDS_EXCLUIR) ficam ocultas por padrão."
+        title="Execuções de benchmark (histórico completo)"
+        description="Cada linha é uma execução completa do pipeline ETL. Execuções de uma campanha trazem campanha, suíte, ordem de submissão, CPU média do sistema, bytes lidos do disco e a condição de cache; as marcadas 'oficial' compõem a campanha exibida no Comparativo. Rodadas antigas (sem campanha) permanecem no banco como histórico. Execuções listadas em BENCHMARK_IDS_EXCLUIR ficam ocultas por padrão."
         action={
           <label className="flex items-center gap-2 text-xs text-academia-700">
             <input

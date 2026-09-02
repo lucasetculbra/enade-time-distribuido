@@ -14,7 +14,9 @@ o pacote de entrega da **Fase 5** (empacotamento e documentação final).
 | [ARQUITETURA.md](ARQUITETURA.md) | Quem vai **entender** | Camadas, fluxo de dados, modelo de tabelas, decisões técnicas justificadas |
 | [DICIONARIO_VARIAVEIS.md](DICIONARIO_VARIAVEIS.md) | Quem vai **entender os dados** | Variável a variável: nome original por ano → forma harmonizada → mudanças entre ciclos |
 | [LOG_EXECUCAO_ETL.md](LOG_EXECUCAO_ETL.md) | Quem vai **auditar** | Registro das execuções do ETL e das alterações controladas na base consolidada |
-| [DESIGN_LOG.md](DESIGN_LOG.md) | Quem vai **entender as escolhas** | Decisões de projeto e alternativas descartadas, com justificativa |
+| [DESIGN_LOG.md](DESIGN_LOG.md) | Quem vai **entender as escolhas** | Decisões de projeto e alternativas descartadas, com justificativa (D1–D17) |
+| [RELATORIO_VERIFICACAO.md](RELATORIO_VERIFICACAO.md) | Quem vai **auditar a migração** | Estado real do projeto, do repositório EnadeX e do Supabase em 2026-09-01; bug do baseline; ordem de despacho; máquina |
+| [COMUNICADO_SEGURANCA.md](COMUNICADO_SEGURANCA.md) | Líder do EnadeX | RPC `truncar_tabela` exposta e modelo de chaves do grupo |
 | [INTEGRACAO_ECOSSISTEMA.md](INTEGRACAO_ECOSSISTEMA.md) | Quem vai **integrar** | Como este módulo conversa com os demais módulos do projeto |
 | [RESULTADOS_BENCHMARK.md](RESULTADOS_BENCHMARK.md) | Quem vai **avaliar** | Números oficiais da Fase 2 (execuções #4, #5, #6), conclusão e explicação da Lei de Amdahl |
 | [EVIDENCIAS_TESTES.md](EVIDENCIAS_TESTES.md) | Quem vai **entregar** | Checklist com 14 prints a anexar, com comando e resultado esperado de cada um |

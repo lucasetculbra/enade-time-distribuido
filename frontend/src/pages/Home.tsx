@@ -23,6 +23,7 @@ import {
   useResumoRegiao,
   useResumoUF,
 } from "@/hooks/useAnalises";
+import { ROTULO_ORDEM, melhorSerie, seriesDoComparativo, type SerieBenchmark } from "@/lib/benchmark";
 import {
   formatDecimal,
   formatInt,
@@ -30,6 +31,13 @@ import {
   formatSeconds,
   formatSpeedup,
 } from "@/lib/format";
+
+function dica(s: SerieBenchmark | null, agregado: boolean): string | undefined {
+  if (!s) return undefined;
+  const ordem = s.ordem_submissao ? ` · ${ROTULO_ORDEM[s.ordem_submissao]}` : "";
+  if (agregado) return `${s.num_workers} workers${ordem} · mediana de ${s.n} suítes`;
+  return `${s.num_workers} workers${ordem} (#${s.execucao_id})`;
+}
 
 export default function Home() {
   const anual = useResumoAnual({});
@@ -44,32 +52,34 @@ export default function Home() {
   const totalUFs = uf.data?.length ?? null;
 
   const tempoBase = comparativo.data?.tempo_baseline_seg ?? null;
-
-  const paralelos = comparativo.data?.itens.filter((i) => i.modo === "paralelo") ?? [];
-  const melhorSpeedup = paralelos.reduce<typeof paralelos[number] | null>(
-    (best, cur) =>
-      cur.speedup !== null && (best === null || (cur.speedup ?? 0) > (best.speedup ?? 0))
-        ? cur
-        : best,
-    null,
-  );
-  const melhorEficiencia = paralelos.reduce<typeof paralelos[number] | null>(
+  const { series, agregado } = comparativo.data
+    ? seriesDoComparativo(comparativo.data)
+    : { series: [] as SerieBenchmark[], agregado: false };
+  const paralelos = series.filter((s) => s.modo === "paralelo");
+  const melhorSpeedup = melhorSerie(series);
+  const melhorEficiencia = paralelos.reduce<SerieBenchmark | null>(
     (best, cur) =>
       cur.eficiencia !== null && (best === null || (cur.eficiencia ?? 0) > (best.eficiencia ?? 0))
         ? cur
         : best,
     null,
   );
-  const melhorThroughput = paralelos.reduce<typeof paralelos[number] | null>(
-    (best, cur) =>
-      best === null || cur.throughput_lps > best.throughput_lps ? cur : best,
+  const melhorThroughput = paralelos.reduce<SerieBenchmark | null>(
+    (best, cur) => (best === null || cur.throughput > best.throughput ? cur : best),
     null,
   );
+  const dicaBaseline = agregado
+    ? comparativo.data?.n_suites
+      ? `mediana de ${comparativo.data.n_suites} suítes`
+      : "mediana da campanha"
+    : comparativo.data?.baseline_sequencial_id
+    ? `Execução #${comparativo.data.baseline_sequencial_id}`
+    : undefined;
 
   return (
     <PageContainer
       title="Visão Geral"
-      description="Indicadores principais do projeto: cobertura dos microdados ENADE (Norte e Nordeste, Computação) e resultados do experimento de processamento paralelo (Fase 2)."
+      description="Indicadores principais do projeto: cobertura dos microdados ENADE (Norte e Nordeste, Computação) e resultados do experimento de processamento paralelo."
     >
       <section>
         <h3 className="text-sm font-semibold uppercase tracking-wide text-academia-600 mb-2">
@@ -85,7 +95,7 @@ export default function Home() {
                 ? formatInt(totalRegistros)
                 : "—"
             }
-            unit="estudantes"
+            unit="inscrições (582 cursos-ano)"
             icon={Database}
           />
           <MetricCard
@@ -119,49 +129,29 @@ export default function Home() {
             label="Tempo sequencial (baseline)"
             value={formatSeconds(tempoBase)}
             icon={Timer}
-            hint={
-              comparativo.data?.baseline_sequencial_id
-                ? `Execução #${comparativo.data.baseline_sequencial_id}`
-                : undefined
-            }
+            hint={dicaBaseline}
           />
           <MetricCard
             label="Melhor speedup"
             value={formatSpeedup(melhorSpeedup?.speedup ?? null)}
             icon={Zap}
             tone="primary"
-            hint={
-              melhorSpeedup
-                ? `${melhorSpeedup.num_workers} workers (#${melhorSpeedup.execucao_id})`
-                : undefined
-            }
+            hint={dica(melhorSpeedup, agregado)}
           />
           <MetricCard
             label="Melhor eficiência"
             value={formatPercent(melhorEficiencia?.eficiencia ?? null)}
             icon={Gauge}
             tone="success"
-            hint={
-              melhorEficiencia
-                ? `${melhorEficiencia.num_workers} workers (#${melhorEficiencia.execucao_id})`
-                : undefined
-            }
+            hint={dica(melhorEficiencia, agregado)}
           />
           <MetricCard
             label="Throughput máximo"
-            value={
-              melhorThroughput
-                ? formatDecimal(melhorThroughput.throughput_lps, 2)
-                : "—"
-            }
+            value={melhorThroughput ? formatDecimal(melhorThroughput.throughput, 2) : "—"}
             unit="linhas/s"
             icon={Cpu}
             tone="warning"
-            hint={
-              melhorThroughput
-                ? `${melhorThroughput.num_workers} workers (#${melhorThroughput.execucao_id})`
-                : undefined
-            }
+            hint={dica(melhorThroughput, agregado)}
           />
         </KpiGrid>
       </section>
@@ -172,21 +162,24 @@ export default function Home() {
           <div>
             <h3 className="text-base font-semibold text-emerald-900">
               {melhorSpeedup
-                ? `Melhor configuração da rodada carregada: ${melhorSpeedup.num_workers} workers`
+                ? `Melhor configuração da ${agregado ? "campanha oficial" : "rodada carregada"}: ${melhorSpeedup.num_workers} workers${
+                    melhorSpeedup.ordem_submissao ? ` · ${ROTULO_ORDEM[melhorSpeedup.ordem_submissao]}` : ""
+                  }`
                 : "Benchmark de processamento paralelo"}
             </h3>
             <p className="text-sm text-emerald-800 mt-1 max-w-3xl">
               {melhorSpeedup ? (
                 <>
-                  Na rodada de benchmark atualmente carregada no banco, a
-                  configuração com{" "}
-                  <strong>{melhorSpeedup.num_workers} workers</strong> obteve o
-                  melhor desempenho: speedup de{" "}
-                  <strong>{formatSpeedup(melhorSpeedup.speedup)}</strong> e
-                  eficiência de{" "}
-                  <strong>{formatPercent(melhorSpeedup.eficiencia)}</strong>. A
-                  melhor configuração pode variar conforme a rodada (CPU, disco e
-                  processos em segundo plano).{" "}
+                  {agregado
+                    ? "Na campanha oficial carregada no banco, a configuração com "
+                    : "Na rodada de benchmark atualmente carregada no banco, a configuração com "}
+                  <strong>{melhorSpeedup.num_workers} workers</strong> obteve o melhor
+                  desempenho: speedup {agregado ? "mediano " : ""}de{" "}
+                  <strong>{formatSpeedup(melhorSpeedup.speedup)}</strong> e eficiência de{" "}
+                  <strong>{formatPercent(melhorSpeedup.eficiencia)}</strong>
+                  {agregado ? ` (${melhorSpeedup.n} suítes, cada paralela pareada com o sequencial da própria suíte)` : ""}
+                  . A melhor configuração depende da máquina (núcleos físicos, cache, ordem de
+                  submissão).{" "}
                 </>
               ) : (
                 <>

@@ -11,6 +11,9 @@ dados_processados/*.backup_*.csv
 # Rede de segurança da migração (pg_dump, CSVs de benchmark, golden JSONs)
 backups/
 
+# Saídas dos geradores de documento/apresentação (binários regeráveis do banco)
+docs/geradores/out/
+
 # Python
 .venv/
 __pycache__/

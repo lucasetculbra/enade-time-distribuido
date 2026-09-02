@@ -1,193 +1,105 @@
-# Resultados do benchmark (Fase 2)
+# Resultados do benchmark — campanha oficial
 
-Resultados oficiais do experimento de processamento paralelo do ETL
-dos microdados ENADE. Todas as execuções abaixo são as **válidas** —
-realizadas com o projeto **fora do OneDrive** para evitar contenção de
-I/O com a sincronização.
+> **Gerado automaticamente** por `docs/geradores/gerar_resultados_md.py` em 2 de setembro de 2026, a partir das views `v_benchmark_resumo` e `v_benchmark_metricas` do banco local. Não edite números à mão: rode o gerador. Campanha `899faa82-2cb8-4a02-91fe-eefb89b308d3`.
 
-## Configuração do experimento
+## Desenho do experimento
 
-| Parâmetro | Valor |
-|---|---|
-| Pipeline | leitura dos TXT → filtro/parse pandas → upsert PostgreSQL |
-| Linhas processadas por execução | 5.340.372 (somatório dos `arq3` dos 6 anos) |
-| Anos por execução | 2005, 2008, 2011, 2014, 2017, 2021 |
-| Banco | PostgreSQL 16 em Docker (`enade_postgres`) |
-| Local de execução | `C:\Projetos\ENADE` (fora do OneDrive) |
-| Modelo de paralelismo | `multiprocessing.Pool` (paralelismo por ano) |
+- **Campanha:** 5 suítes completas + 1 parcial — interrompida por desligamento da máquina; as execuções já gravadas permanecem válidas (pareamento por suíte) e elevam o n de algumas configurações. Em cada suíte completa, 1 sequencial (baseline da suíte) + 4 tamanhos de pool (2, 3, 4, 6 workers) × 2 ordens de submissão (crescente e LPT) = 9 execuções; total de 48 execuções oficiais (`oficial = TRUE`), entre 01/09/2026 16:14 e 02/09/2026 13:49 UTC. O n de cada configuração está na tabela.
+- **Pareamento:** cada paralela é comparada com o sequencial da **própria suíte** (`v_benchmark_metricas`, `pareamento = 'suite'`); mediana, mínimo, máximo e IQR por configuração em `v_benchmark_resumo`.
+- **Ordens de submissão:** `crescente` (2005 → 2021, comportamento histórico do script 09) e `lpt` (maior tempo primeiro — Graham, 1969 — com os tempos por ano do sequencial da mesma suíte). O `ProcessPoolExecutor` entrega cada ano ao primeiro worker livre na ordem de submissão; ele **não** balanceia.
+- **Máquina:** Intel64 Family 6 Model 140 Stepping 1, GenuineIntel — **4 núcleos físicos / 8 lógicos** (Intel Core i5-1135G7), NVMe Samsung, 24 GB RAM, Windows 11. p = 4 satura os núcleos físicos; p = 6 roda em hyperthreads.
+- **Cache:** passada de aquecimento descartada antes da campanha (leu **51 MB** do disco); todas as execuções oficiais com **cache de páginas quente** — mediana de **17,3 MB** lidos por execução.
+- **Carga de fundo declarada:** CPU ociosa por 10 s antes de medir = **40,4 %**; containers ativos: enade_postgres, zabbix-agent; CPU média do sistema durante as execuções: 67,0 %. Sem API nem frontend rodando. Diretório fora do OneDrive.
+- **Pipeline por execução:** leitura dos TXT (arq1 + arq3 dos 6 anos, 5.340.372 linhas), filtro e agregação com pandas; workers puros (sem I/O em disco, sem banco); só o processo principal grava (1 linha em `benchmark_execucao` + 6 em `benchmark_etapa`). p = 8 fica fora da campanha: com 6 unidades de trabalho, dois workers ficariam ociosos por construção.
 
-## Execuções válidas
+## Resultados por configuração
 
-### Sequencial — execução #4 (baseline)
+| Configuração | n | Tempo (s) — mediana [mín–máx] | IQR (s) | Speedup (mediana) | Speedup mín–máx | Eficiência (mediana) | Throughput (linhas/s) |
+|---|--:|---|--:|--:|---|--:|--:|
+| Sequencial (1) | 6 | 89,56 [83,42–91,13] | 5,56 | 1,0000× | — | 100,0 % | 59.633 |
+| 2 workers · crescente | 6 | 56,26 [53,76–57,38] | 2,49 | 1,5750× | 1,47×–1,67× | 78,8 % | 94.946 |
+| 2 workers · LPT | 5 | 48,45 [45,36–51,02] | 3,69 | 1,8392× | 1,74×–1,87× | 92,0 % | 110.232 |
+| 3 workers · crescente | 6 | 42,10 [37,54–45,53] | 4,97 | 2,0693× | 1,97×–2,41× | 69,0 % | 126.859 |
+| 3 workers · LPT | 5 | 38,90 [36,17–48,79] | 1,52 | 2,3042× | 1,82×–2,33× | 76,8 % | 137.276 |
+| 4 workers · crescente | 5 | 40,20 [35,92–46,09] | 5,17 | 2,2498× | 1,93×–2,32× | 56,2 % | 132.839 |
+| 4 workers · LPT | 5 | 40,75 [36,29–43,00] | 5,65 | 2,1216× | 2,06×–2,46× | 53,0 % | 131.052 |
+| **6 workers · crescente** | 5 | 33,35 [28,60–36,06] | 3,88 | 2,7010× | 2,53×–2,92× | 45,0 % | 160.153 |
+| 6 workers · LPT | 5 | 36,49 [33,09–39,30] | 5,12 | 2,4300× | 2,32×–2,52× | 40,5 % | 146.341 |
 
-| Métrica | Valor |
-|---|---|
-| Modo | sequencial |
-| Workers | 1 |
-| Tempo total | **243,5496 s** |
-| Linhas processadas | 5.340.372 |
-| Throughput | **21.927,25 linhas/s** |
+> **Melhor configuração: 6 workers · crescente** — speedup mediano **2,7010×** (mín–máx 2,53×–2,92×), eficiência **45,0 %**, contra um sequencial mediano de **89,56 s** [83,42–91,13].
 
-### Paralelo 2 workers — execução #5
+## Tetos de escalonamento e decomposição da perda
 
-| Métrica | Valor |
-|---|---|
-| Modo | paralelo |
-| Workers | 2 |
-| Tempo total | **198,5749 s** |
-| Speedup | **1,2265 ×** |
-| Eficiência | **61,32 %** |
-| Throughput | **26.893,49 linhas/s** |
+Três perdas separadas, medidas por suíte e agregadas por mediana:
 
-### Paralelo 4 workers — execução #6
+1. **Granularidade + escalonamento** — do ideal (soma dos tempos por ano ÷ p) ao **teto** da ordem usada (makespan do escalonamento guloso com os tempos por ano do sequencial da mesma suíte).
+2. **Contenção** — do teto ao **makespan medido** (maior soma de tempos por worker); aparece como **inflação das etapas** (soma dos tempos por ano em paralelo ÷ soma no sequencial).
+3. **Overhead** — do makespan medido ao wall-clock (spawn dos processos, coleta, gravação).
 
-| Métrica | Valor |
-|---|---|
-| Modo | paralelo |
-| Workers | 4 |
-| Tempo total | **218,9745 s** |
-| Speedup | **1,1122 ×** |
-| Eficiência | **27,81 %** |
-| Throughput | **24.388,10 linhas/s** |
+| p | Ordem | n | Ideal (s) | Teto ordem usada → S | Teto LPT → S | Makespan medido (s) | Inflação | Wall (s) | Overhead (s) | S medido | % do teto (ordem usada) | CPU % | Disco (MB) |
+|--:|---|--:|--:|---|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| 2 | crescente | 6 | 44,76 | 47,58 → 1,88× | 45,03 → 1,97× | 55,25 | 1,18× | 56,26 | 1,1 | 1,5750× | 85 % | 57,9 | 33,9 |
+| 2 | LPT | 5 | 44,31 | 44,56 → 1,96× | 44,56 → 1,96× | 47,49 | 1,06× | 48,45 | 0,9 | 1,8392× | 94 % | 48,3 | 14,6 |
+| 3 | crescente | 6 | 29,84 | 30,93 → 2,83× | 30,77 → 2,90× | 40,88 | 1,36× | 42,10 | 1,1 | 2,0693× | 73 % | 68,8 | 19,3 |
+| 3 | LPT | 5 | 29,54 | 30,38 → 2,89× | 30,38 → 2,89× | 37,83 | 1,21× | 38,90 | 1,1 | 2,3042× | 80 % | 61,7 | 18,9 |
+| 4 | crescente | 5 | 22,16 | 28,76 → 3,01× | 27,74 → 3,22× | 39,14 | 1,42× | 40,20 | 1,1 | 2,2498× | 73 % | 67,8 | 17,8 |
+| 4 | LPT | 5 | 22,16 | 27,74 → 3,22× | 27,74 → 3,22× | 39,59 | 1,56× | 40,75 | 1,3 | 2,1216× | 66 % | 75,5 | 9,3 |
+| 6 | crescente | 5 | 14,77 | 17,62 → 4,96× | 17,62 → 4,96× | 31,80 | 1,84× | 33,35 | 1,5 | 2,7010× | 55 % | 90,1 | 16,5 |
+| 6 | LPT | 5 | 14,77 | 17,62 → 4,96× | 17,62 → 4,96× | 35,00 | 2,07× | 36,49 | 1,5 | 2,4300× | 48 % | 94,2 | 7,0 |
 
-## Tabela comparativa
+Sequencial: n = 6, mediana 89,56 s, CPU 46,2 %, disco 71,0 MB. Aquecimento: 51 MB lidos.
 
-| Exec. | Modo | Workers | Tempo (s) | Speedup | Eficiência | Throughput (lps) |
-|------:|------|--------:|----------:|--------:|-----------:|-----------------:|
-| 4 | sequencial | 1 | 243,5496 | 1,0000 | 100,00 % | 21.927,25 |
-| 5 | paralelo   | 2 | 198,5749 | **1,2265** | **61,32 %** | **26.893,49** |
-| 6 | paralelo   | 4 | 218,9745 | 1,1122 | 27,81 % | 24.388,10 |
+## Hipóteses pré-registradas
 
-## Conclusão
+- **H1 — p = 6 não supera p = 4 (LPT):** speedup mediano p = 4 2,1216× × p = 6 2,4300× → **refutada**. Com 4 núcleos físicos, p = 6 roda em hyperthreads e o teto de granularidade (6 unidades) não cresce a partir de 6.
+- **H1 — p = 6 não supera p = 4 (crescente):** speedup mediano p = 4 2,2498× × p = 6 2,7010× → **refutada**. Com 4 núcleos físicos, p = 6 roda em hyperthreads e o teto de granularidade (6 unidades) não cresce a partir de 6.
+- **H2 — cache quente ⇒ limitado por CPU, não por disco:** mediana de 17,3 MB lidos nas execuções quentes contra 51 MB no aquecimento. A explicação anterior ("4 workers lendo do mesmo disco geram contenção") **não se sustenta** nos bytes medidos: a contenção é de CPU (parsing com pandas) em 4 núcleos físicos.
+- **H3 — LPT ≥ crescente:** p = 2: LPT 1,8392× × crescente 1,5750× (confirmada); p = 3: LPT 2,3042× × crescente 2,0693× (confirmada); p = 4: LPT 2,1216× × crescente 2,2498× (refutada). A diferença entre as ordens é perda de escalonamento — o código dos workers é idêntico.
 
-> **Melhor configuração: 2 workers.**
+> A métrica de **Karp–Flatt** mostrada no dashboard estima uma "fração sequencial" a partir do speedup; ela **embute** as três perdas acima e não deve ser lida como uma seção serial do código.
 
-- **2 workers** entregou o **menor tempo absoluto** e o **maior
-  throughput** do experimento. A eficiência (61,32 %) indica que cada
-  worker está bem utilizado, com sobreposição saudável entre I/O e
-  CPU.
-- **4 workers** ainda supera o sequencial (speedup 1,11 ×), mas
-  **piora** em relação a 2 workers. A eficiência despenca para 27,81 %,
-  evidenciando que cada worker adicional contribui cada vez menos.
-- O comportamento é coerente com a **Lei de Amdahl**: a fração
-  sequencial do pipeline (abertura de arquivos texto, parsing pandas
-  linha a linha, `COPY FROM STDIN` no Postgres) limita o speedup
-  máximo. Adicionar workers além do ponto ótimo aumenta o **overhead**
-  sem proporcional ganho de throughput.
+## Histórico das medições e o erro do baseline
 
-### Fatores que explicam o platô em 2 workers
+O banco preserva todas as rodadas anteriores (nenhuma linha foi apagada ou sobrescrita; ids 1–6 mantêm o pareamento temporal com o sequencial imediatamente anterior, `pareamento = 'temporal'`).
 
-1. **Gargalo de I/O de disco.** Mesmo em SSD, abrir/ler 6 arquivos TXT
-   simultaneamente em 4 workers gera contenção da fila do controlador.
-   Os workers passam mais tempo esperando bytes do que processando.
-2. **Disputa do PostgreSQL.** O `COPY FROM STDIN` serializa no servidor
-   por conexão. Múltiplos workers competem por escrita; o ganho
-   "paralelo" some quando o gargalo é o banco.
-3. **Overhead de `spawn` no Windows.** No Windows, `multiprocessing`
-   usa o método `spawn` (em vez de `fork`), o que significa que cada
-   worker carrega Python, importa módulos e reinicializa pandas do
-   zero. Esse custo fixo penaliza configurações com mais workers
-   processando jobs curtos.
-4. **Lei de Amdahl.** Se ~30 % do pipeline for inerentemente
-   sequencial, o speedup teórico máximo é
-   `1 / (0,30 + 0,70/p)` — saturando rápido conforme `p` cresce. O
-   speedup observado (1,23 ×) é compatível com uma fração paralela
-   efetiva em torno de 65–70 %.
+| Data | Sequencial | T(1) | Paralela | T(p) | Speedup | Eficiência | Ordem |
+|---|---|--:|---|--:|--:|--:|---|
+| 21/06/2026 | #1 | 89,58 s | #2 (2 workers) | 68,40 s | 1,3096× | 65,5 % | crescente |
+| 21/06/2026 | #1 | 89,58 s | #3 (4 workers) | 43,17 s | 2,0749× | 51,9 % | crescente |
+| 21/08/2026 | #4 | 112,93 s | #5 (2 workers) | 74,46 s | 1,5165× | 75,8 % | crescente |
+| 21/08/2026 | #4 | 112,93 s | #6 (4 workers) | 45,85 s | 2,4632× | 61,6 % | crescente |
 
-## Por que existem execuções #1, #2 e #3 e por que ficam ocultas
+**O erro:** a versão anterior de `/api/benchmark/comparativo` dividia todas as execuções pelo sequencial **mais recente**. Com duas rodadas no banco, o dashboard de 21/08/2026 exibiu:
 
-As execuções de id 1, 2 e 3 foram **testes de ambiente** realizados
-**dentro do OneDrive**, antes da decisão de mover o projeto para
-`C:\Projetos\ENADE`. O cliente do OneDrive estava sincronizando os
-arquivos durante a leitura, criando contenção severa de I/O e
-poluindo as métricas.
+| Execução | Baseline usado (errado) | Speedup exibido | Eficiência exibida | Baseline pareado | Speedup correto | Eficiência correta |
+|---|---|--:|--:|---|--:|--:|
+| #2 (2 workers, 68,40 s) | #4 (112,93 s) | 1,6510× | 82,5 % | #1 | 1,3096× | 65,5 % |
+| #3 (4 workers, 43,17 s) | #4 (112,93 s) | 2,6157× | 65,4 % | #1 | 2,0749× | 51,9 % |
 
-- Esses registros **não foram apagados** do banco (preservação do
-  histórico).
-- Na época, a API os filtrava por padrão via `BENCHMARK_IDS_EXCLUIR=[1,2,3]`
-  em `api/settings.py`. **Esse default foi removido** — ver a nota abaixo.
-- Para ocultar execuções específicas hoje, defina a variável de ambiente
-  `BENCHMARK_IDS_EXCLUIR` (JSON) antes de subir a API, ex.:
-  `$env:BENCHMARK_IDS_EXCLUIR='[1,2,3]'`.
-- Para inspecionar as ocultas, use o query parameter
-  `?apenas_validas=false` em qualquer endpoint `/api/benchmark/...`.
+Esse card entrou no documento acadêmico de 21/08/2026. **Correção (DESIGN_LOG D13):** a view pareia por suíte; a API só lê a view; `scripts/13_validar_metricas.py` e `tests/` recalculam em Python e falham em qualquer divergência; documento, slides e este arquivo são gerados das views e conferidos por `docs/geradores/verificar_numeros.py`.
 
-> ⚠️ **Por que o default virou lista vazia.** O `id` de
-> `benchmark_execucao` é um `BIGSERIAL` e **reinicia em 1** a cada
-> `05_criar_schema_postgres.py --reset`. Uma lista fixa `[1,2,3]` deixou de
-> apontar para os testes do OneDrive e passou a esconder justamente as
-> execuções válidas da rodada atual — zerando as três telas de Benchmark
-> SPD. Exclusão por id é frágil por natureza; se precisar ocultar
-> execuções, prefira a variável de ambiente por rodada.
+**A rodada citada na apresentação anterior** (sequencial de aproximadamente 243 s; "2 workers vence e 4 piora") foi apagada em um `--reset` do schema (DESIGN_LOG D9) e **não tem suporte em banco** — deixou de ser citada como resultado. A conclusão daquela rodada não é reproduzida pela campanha oficial.
 
-> **Lição aprendida:** clientes de sincronização em nuvem (OneDrive,
-> Dropbox, Google Drive) **invalidam medições de I/O**. Mover o projeto
-> para um caminho local sem sincronização foi o que tornou o
-> experimento reproduzível.
+Outras campanhas no banco (não oficiais): `6e6c1ccc` em 01/09/2026 (2 exec., [campanha 6e6c1ccc] smoke pos-migracao v2).
 
 ## Reprodução
 
 ```powershell
 cd C:\Projetos\ENADE
 .\.venv\Scripts\Activate.ps1
-python scripts\10_rodar_suite_benchmark.py
+docker compose up -d postgres
+python scripts\14_migrar_schema_v2.py --status        # schema v2 (aditivo)
+python scripts\10_rodar_suite_benchmark.py --oficial --obs "nova campanha"   # ~45 min
+python scripts\13_validar_metricas.py --api http://localhost:8000
+python docs\geradores\gerar_resultados_md.py          # regenera este arquivo
 ```
 
-Os novos `id`s serão maiores que 6 e aparecerão automaticamente na
-API/dashboard (já não estão na lista de exclusão).
+Auditoria direta no banco:
 
----
+```sql
+SELECT * FROM v_benchmark_resumo WHERE campanha_id = '899faa82-2cb8-4a02-91fe-eefb89b308d3' ORDER BY num_workers, ordem_submissao;
+SELECT execucao_id, num_workers, ordem_submissao, speedup, eficiencia, baseline_execucao_id, pareamento
+  FROM v_benchmark_metricas WHERE campanha_id = '899faa82-2cb8-4a02-91fe-eefb89b308d3' ORDER BY suite_id, num_workers, ordem_submissao;
+```
 
-## Rodada adicional de repopulação do benchmark para demonstração
-
-> Esta seção **não substitui** os resultados oficiais acima — eles continuam
-> válidos. Ela apenas documenta uma **segunda execução real**, feita em outro
-> momento e em outra condição de máquina, para repor os dados das telas
-> **Benchmark SPD** depois que um `--reset` do schema esvaziou as tabelas
-> `benchmark_execucao` / `benchmark_etapa`.
-
-### Contexto
-- A **rodada original documentada** (seção acima) apontava **2 workers** como
-  melhor configuração (speedup 1,2265×).
-- Após o reset do banco, as tabelas de benchmark ficaram vazias. Para a tela SPD
-  voltar a ter dados, foi executada uma **nova rodada real**, novamente
-  **fora do OneDrive**, com `python scripts\10_rodar_suite_benchmark.py`.
-- Nenhum dado foi fabricado: os números abaixo são de uma execução genuína do
-  pipeline (5.340.372 linhas por rodada, 6 anos).
-
-### Resultados desta rodada adicional (data: 2026-06-21)
-
-| ID | Modo | Workers | Tempo | Speedup | Eficiência | Throughput |
-|----|------|--------:|------:|--------:|-----------:|-----------:|
-| 1 | sequencial | 1 | 89,58 s | 1,000 | 100,0 % | 59.617 l/s |
-| 2 | paralelo | 2 | 68,40 s | 1,3096 | 65,48 % | 78.076 l/s |
-| **3** | **paralelo** | **4** | **43,17 s** | **2,0749** | **51,87 %** | **123.700 l/s** |
-
-Máquina desta rodada: Intel 8 núcleos, 24 GB RAM.
-
-### Interpretação
-- **Nesta nova rodada, 4 workers apresentou o melhor tempo, speedup e
-  throughput** — diferente da rodada original, onde 2 workers venceu.
-- Isso **não invalida** nenhum dos dois resultados: **ambos são reais**, mas
-  correspondem a **execuções diferentes**, em **condições de máquina diferentes**.
-- Benchmarks de I/O e CPU **variam** conforme processador, disco (SSD/NVMe),
-  quantidade de RAM, processos em segundo plano e estado térmico da máquina.
-  Em uma máquina mais rápida e com I/O folgado, o paralelismo escala melhor e o
-  ponto ótimo de workers tende a se deslocar para a direita (mais workers).
-
-### O que está carregado no banco para a demonstração atual
-- Para a **demonstração atual do dashboard**, os dados carregados no banco são os
-  desta **rodada adicional** (IDs **1, 2, 3**).
-- Esses IDs aparecem normalmente na API e no dashboard: o default de
-  `BENCHMARK_IDS_EXCLUIR` é lista vazia. Nenhum passo extra é necessário —
-  basta subir a API.
-- Os **números oficiais** (Fase 2, seção no topo deste documento) permanecem como
-  o resultado de referência do trabalho.
-
-### Observação sobre a leitura das duas rodadas
-A tela **Benchmark · Comparativo** gera a interpretação **a partir dos dados
-carregados no banco**, e não de um texto fixo. Como a rodada atualmente
-carregada é a adicional (onde 4 workers venceu), é isso que o dashboard
-descreve — enquanto este documento preserva os números oficiais da Fase 2
-(onde 2 workers venceu). Os dois são reais e correspondem a máquinas
-diferentes.
+Lições registradas: clientes de sincronização em nuvem contaminam I/O (2026-06); um baseline escolhido por recência mistura rodadas (2026-08); uma explicação por "disco" não sobrevive aos bytes medidos (2026-09). Medir > supor.

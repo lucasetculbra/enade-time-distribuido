@@ -56,19 +56,47 @@ python scripts\07_validar_banco.py
 > rodá-los novamente — os CSVs já estão consolidados em
 > `dados_processados\`.
 
-### (Opcional) Re-rodar benchmark da Fase 2
+### Schema v2 do benchmark (aditivo — obrigatório antes de medir)
 
 ```powershell
-python scripts\10_rodar_suite_benchmark.py
+python scripts\14_migrar_schema_v2.py --status   # mostra o que existe
+python scripts\14_migrar_schema_v2.py            # aplica (idempotente; nada é apagado)
 ```
 
-> **Importante:** rode com o projeto **fora do OneDrive** para evitar
-> contenção de I/O com a sincronização. Ver
-> [`RESULTADOS_BENCHMARK.md`](RESULTADOS_BENCHMARK.md).
+> **Nunca** use `05_criar_schema_postgres.py --reset` em um banco com dados:
+> ele dropa `benchmark_execucao`/`benchmark_etapa` (incidente D9). O 14 só
+> adiciona colunas e substitui views. Instalações novas já nascem com a v2
+> (o 05 importa o 14).
 
-> A API **não oculta nenhuma execução por padrão**. Para esconder execuções
-> específicas de uma rodada, defina `BENCHMARK_IDS_EXCLUIR` (JSON) antes de
-> subir o uvicorn — ex.: `$env:BENCHMARK_IDS_EXCLUIR='[1,2,3]'`.
+### Benchmark — campanha oficial (Fase 6 / v2)
+
+```powershell
+# smoke (1 suíte: sequencial + 2 workers LPT), ~3 min, não oficial
+python scripts\10_rodar_suite_benchmark.py --workers 2 --ordens lpt --reps 1 --sem-aquecer --obs smoke
+
+# campanha oficial: aquecimento + 5 suítes × (1 seq + {2,3,4,6} × {crescente,lpt}) = 45 execuções, ~45 min
+python scripts\10_rodar_suite_benchmark.py --oficial --obs "descreva a máquina e o que está rodando"
+
+# checagem cruzada Python × views × API
+python scripts\13_validar_metricas.py --api http://localhost:8000
+```
+
+Condições para uma campanha válida: projeto **fora do OneDrive**; Docker só
+com o Postgres (pare `enade_api` se estiver de pé); sem API, frontend ou
+build rodando; nada pesado em segundo plano. O script mede a CPU ociosa por
+10 s antes de começar e grava o valor em todas as execuções — se estiver alta,
+investigue antes de medir. Cada execução individual também aceita
+`--campanha/--suite/--oficial` (scripts 08 e 09) e o 09 aceita
+`--ordem crescente|lpt` e `--tempos-de <id_sequencial>`.
+
+> O `/api/benchmark/comparativo` mostra por padrão a **campanha oficial mais
+> recente** (agregada em `resumo[]`); `?apenas_validas=false` devolve o
+> histórico inteiro e `?campanha_id=…`/`?suite_id=…` fazem o drill-down.
+> `BENCHMARK_IDS_EXCLUIR` (JSON) continua disponível para ocultar ids
+> específicos — ex.: `$env:BENCHMARK_IDS_EXCLUIR='[1,2,3]'`.
+
+Resultados e leitura: [`RESULTADOS_BENCHMARK.md`](RESULTADOS_BENCHMARK.md)
+(gerado do banco por `docs/geradores/gerar_resultados_md.py`).
 
 ---
 
@@ -132,7 +160,32 @@ URLs:
 
 ---
 
-## 5. Ordem completa (resumo)
+## 5. Testes, validação e geradores
+
+```powershell
+# venv ativo; Postgres no ar (os testes de banco são PULADOS sem ele)
+pip install -r api\requirements.txt pytest httpx      # primeira vez
+pytest -q                                              # filtros, repositórios, views, rotas
+
+# documento (.docx), apresentação (.pptx) e RESULTADOS_BENCHMARK.md — tudo lido das views
+python docs\geradores\analise_escalonamento.py --json docs\geradores\out\escalonamento.json --md
+python docs\geradores\gerar_resultados_md.py
+python docs\geradores\gerar_apresentacao.py
+python docs\geradores\gerar_documento.py
+
+# confere que nenhum número do .pptx/.docx está fora das views (lista negra da rodada perdida inclusa)
+python docs\geradores\verificar_numeros.py --pptx docs\geradores\out\apresentacao.pptx `
+    --docx docs\geradores\out\ENADE_Time_Distribuido_Documento_Academico.docx `
+    --escalonamento docs\geradores\out\escalonamento.json
+```
+
+As capturas de tela e os diagramas usados pelos geradores ficam fora do git
+(`apresentacao/documento_final/` neste repositório); aponte outra pasta com
+`--screenshots`/`--ativos` ou `GERADORES_SCREENSHOTS`/`GERADORES_ATIVOS`.
+
+---
+
+## 6. Ordem completa (resumo)
 
 ```powershell
 # Terminal 1 — banco

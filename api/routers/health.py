@@ -16,4 +16,4 @@ def health(cursor: PgCursor = Depends(get_db_cursor)) -> dict:
             status_code=503,
             detail=f"Database unreachable: {exc}",
         ) from exc
-    return {"status": "ok", "database": "ok", "version": "0.1.0"}
+    return {"status": "ok", "database": "ok", "version": "0.2.0"}

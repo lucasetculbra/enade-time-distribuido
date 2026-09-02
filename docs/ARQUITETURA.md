@@ -48,7 +48,13 @@ microdados_enade_*/  ──►  scripts/ ETL  ──►  dados_processados/  ─
 3. **Scripts 05 e 06** criam o schema dimensional e carregam o CSV no
    PostgreSQL via `COPY FROM STDIN`.
 4. **Scripts 08, 09, 10** rodam o experimento de paralelismo e gravam
-   resultados em `benchmark_execucao` / `benchmark_etapa`.
+   resultados em `benchmark_execucao` / `benchmark_etapa`. O 10 organiza
+   uma **campanha** (aquecimento descartado + N suítes; em cada suíte um
+   sequencial e as paralelas em duas ordens de submissão); o 09 escolhe a
+   ordem (`--ordem crescente|lpt`) — o `ProcessPoolExecutor` entrega cada
+   ano ao primeiro worker livre na ordem submetida. A instrumentação (CPU
+   média, bytes lidos do disco, núcleos físicos/lógicos) roda só no processo
+   principal; `etl/processar_ano.py` continua puro.
 5. **API FastAPI** expõe endpoints read-only sobre as tabelas/views.
 6. **Frontend React** consome a API e apresenta análises e gráficos.
 
@@ -63,13 +69,24 @@ microdados_enade_*/  ──►  scripts/ ETL  ──►  dados_processados/  ─
 - `dim_regiao, dim_uf, dim_ano, dim_grupo, dim_modalidade,
   dim_categoria_adm, dim_organizacao_acad`.
 
-**Benchmark:**
-- `benchmark_execucao` — uma linha por execução completa do ETL.
+**Benchmark (schema v2 — `scripts/14_migrar_schema_v2.py`, aditivo):**
+- `benchmark_execucao` — uma linha por execução completa do ETL. Além de
+  tempo/throughput/memória, guarda `campanha_id`, `suite_id`, `oficial`,
+  `ordem_submissao` (`crescente` | `lpt`), `cpu_fisicos`, `cpu_logicos`,
+  `cpu_percent_medio`, `disco_bytes_lidos`, `cache_quente`, `aquecimento`,
+  `execucao_uid`.
 - `benchmark_etapa` — uma linha por ano processado dentro de uma
-  execução (permite drill-down).
-- `v_benchmark_metricas` (view) — junta cada execução paralela ao
-  baseline sequencial mais próximo e calcula `speedup`, `eficiencia`,
-  `throughput_*`.
+  execução (permite drill-down por `worker_pid`).
+- `v_benchmark_metricas` (view) — **definição única** de `speedup` e
+  `eficiencia`: pareia cada execução paralela com o sequencial da **mesma
+  suíte**; linhas antigas sem suíte usam o sequencial imediatamente anterior
+  (`pareamento = 'temporal'`).
+- `v_benchmark_resumo` (view) — mediana, mín, máx, IQR e `n` por
+  (campanha, workers, ordem de submissão).
+- `tbl_enade_time_publicacao` — log das publicações no Supabase.
+
+Hierarquia: **campanha** (1 por `10 --oficial`) → **suíte** = repetição
+(sequencial + paralelas pareadas) → **execução** → **etapa** (ano).
 
 ## Decisões técnicas
 
@@ -79,8 +96,13 @@ microdados_enade_*/  ──►  scripts/ ETL  ──►  dados_processados/  ─
   preservam a integridade do score ENADE (0–100).
 - **`COPY FROM STDIN`** carrega milhões de linhas em segundos — muito
   mais eficiente que `INSERT` linha a linha.
-- **Views** (`v_benchmark_metricas`) calculam métricas de paralelismo
-  em SQL, sem replicar lógica no Python.
+- **Views** (`v_benchmark_metricas`, `v_benchmark_resumo`) são a **única**
+  definição das métricas de paralelismo. A API só lê as views; o Python
+  recalcula a partir das tabelas apenas para **conferir**
+  (`scripts/13_validar_metricas.py`, `tests/`). Essa inversão nasceu de um
+  erro real: o endpoint de comparativo recalculava speedup contra "o
+  sequencial mais recente" e, com duas rodadas no banco, inflou um resultado
+  (DESIGN_LOG D13).
 - **Docker** garante reprodutibilidade — o mesmo `docker-compose up -d`
   funciona em qualquer máquina.
 - Alternativas consideradas:

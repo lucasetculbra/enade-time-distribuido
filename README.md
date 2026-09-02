@@ -30,7 +30,8 @@ para visualização longitudinal e dos resultados do experimento de paralelismo.
   [`docs/DICIONARIO_VARIAVEIS.md`](docs/DICIONARIO_VARIAVEIS.md).
 - Regiões: Norte e Nordeste (`CO_REGIAO_CURSO ∈ {1, 2}`).
 - Edições do ENADE: 2005, 2008, 2011, 2014, 2017, 2021.
-- Total consolidado em `fato_enade`: **24.967 registros**.
+- Total consolidado em `fato_enade`: **24.967 registros** (inscrições) —
+  **582 cursos-ano**, que é a unidade analítica (ver `docs/DICIONARIO_VARIAVEIS.md`).
 
 ---
 
@@ -66,7 +67,7 @@ C:\Projetos\ENADE\
 │   ├── GUIA_APRESENTACAO.md
 │   ├── LIMPEZA_SUGERIDA.md
 │   └── PROXIMOS_PASSOS.md
-├── scripts/                   ← 11 scripts numerados (Fases 1, 2 e carga externa)
+├── scripts/                   ← scripts numerados (Fases 1, 2, carga externa, benchmark v2)
 │   ├── 01_inspecionar_estrutura.py
 │   ├── 02_processar_microdados_enade.py
 │   ├── 03_gerar_bases_analise.py
@@ -75,11 +76,15 @@ C:\Projetos\ENADE\
 │   ├── 05_criar_schema_postgres.py
 │   ├── 06_carregar_dados_postgres.py
 │   ├── 07_validar_banco.py
-│   ├── 08_benchmark_sequencial.py
-│   ├── 09_benchmark_paralelo.py
-│   ├── 10_rodar_suite_benchmark.py
-│   └── 11_carregar_supabase.py    ← mesma carga, destino Supabase
+│   ├── 08_benchmark_sequencial.py      ← instrumentado (CPU, disco, suíte/campanha)
+│   ├── 09_benchmark_paralelo.py        ← --ordem crescente|lpt (ordem de submissão)
+│   ├── 10_rodar_suite_benchmark.py     ← campanha oficial: suítes × ordens × repetições
+│   ├── 11_carregar_supabase.py         ← mesma carga, destino Supabase
+│   ├── 13_validar_metricas.py          ← checagem cruzada Python × views × API
+│   └── 14_migrar_schema_v2.py          ← migração ADITIVA (nunca --reset em banco com dados)
 ├── etl/                       ← módulo auxiliar dos scripts de benchmark
+├── tests/                     ← pytest: filtros, repositórios, views de benchmark, rotas
+├── docs/geradores/            ← documento e apresentação gerados a partir das views do banco
 ├── api/                       ← FastAPI read-only (Fase 3)
 │   ├── Dockerfile
 │   ├── main.py
@@ -180,7 +185,8 @@ npm run preview -- --host 0.0.0.0 --port 3000
 | 2 | Benchmark sequencial × paralelo (2 e 4 workers) | concluída |
 | 3 | API FastAPI read-only | concluída |
 | 4 | Dashboard React/Vite | concluída |
-| 5 | Empacotamento e documentação final | **atual** |
+| 5 | Empacotamento e documentação final | concluída |
+| 6 | Benchmark v2 — correção do baseline do comparativo, ordem de submissão (LPT), campanha oficial com repetições e instrumentação; migração para o ecossistema EnadeX | **atual** |
 
 Próximos passos (não implementados nesta entrega): ver
 [`docs/PROXIMOS_PASSOS.md`](docs/PROXIMOS_PASSOS.md).

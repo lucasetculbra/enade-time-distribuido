@@ -13,6 +13,12 @@ Uso:
   python scripts/05_criar_schema_postgres.py            # cria (erro se já existe)
   python scripts/05_criar_schema_postgres.py --reset    # DROP CASCADE e recria
 
+ATENÇÃO — `--reset` APAGA benchmark_execucao/benchmark_etapa (incidente D9).
+Em banco que já tem dados use `scripts/14_migrar_schema_v2.py`, que é aditivo.
+Este script aplica a mesma extensão v2 (campanhas, suítes, ordem de submissão,
+instrumentação, v_benchmark_resumo) logo após criar as tabelas-base, importando
+`aplicar()` do script 14 — a definição vive em um único lugar.
+
 Lê configuração de variáveis de ambiente (com defaults):
   POSTGRES_HOST=localhost  POSTGRES_PORT=5432
   POSTGRES_DB=enade_db     POSTGRES_USER=enade_user  POSTGRES_PASSWORD=enade_password
@@ -24,8 +30,19 @@ import argparse
 import os
 import sys
 
+import importlib.util
+from pathlib import Path
+
 import psycopg2
 from psycopg2 import sql
+
+# Extensão v2 do benchmark (script 14) — carregada por caminho porque o nome
+# do módulo começa com dígito. Só `aplicar()` é usado.
+_spec14 = importlib.util.spec_from_file_location(
+    "migrar_schema_v2", Path(__file__).resolve().parent / "14_migrar_schema_v2.py"
+)
+_mig14 = importlib.util.module_from_spec(_spec14)
+_spec14.loader.exec_module(_mig14)
 
 
 # ---------------------------------------------------------------------------
@@ -242,7 +259,9 @@ INSERT INTO dim_ano (co_ano, edicao) VALUES
 TABELAS_NA_ORDEM_DE_DROP = [
     # ordem inversa de dependência; CASCADE cuida do resto, mas listamos
     # explicitamente para o reset ser previsível
+    "v_benchmark_resumo",     # view (depende de v_benchmark_metricas)
     "v_benchmark_metricas",   # view
+    "tbl_enade_time_publicacao",
     "benchmark_etapa",
     "benchmark_execucao",
     "fato_enade",
@@ -306,6 +325,8 @@ def main() -> int:
             cur.execute(DDL_FATO)
             print("Criando tabelas de benchmark + view...")
             cur.execute(DDL_BENCHMARK)
+            print("Aplicando extensão v2 do benchmark (script 14)...")
+            _mig14.aplicar(cur, verbose=False)
             print("Inserindo lookup data...")
             cur.execute(SEED)
 

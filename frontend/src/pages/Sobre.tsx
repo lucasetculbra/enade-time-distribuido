@@ -28,8 +28,10 @@ export default function Sobre() {
             2021 (ciclos trienais; 2021 é reaplicação pós-pandemia).
           </li>
           <li>
-            <strong>Total processado:</strong> 24.967 registros consolidados em
-            <em> fato_enade</em>.
+            <strong>Total processado:</strong> 24.967 inscrições consolidadas em
+            <em> fato_enade</em> — <strong>582 cursos-ano</strong>, que é a unidade
+            analítica (as linhas replicadas funcionam como peso por matrícula nas
+            médias).
           </li>
         </ul>
       </Card>
@@ -55,8 +57,10 @@ export default function Sobre() {
             <div>
               <div className="font-semibold">ETL paralelo</div>
               <div className="text-academia-600">
-                Python (pandas + multiprocessing). Pool de workers
-                processando ano-a-ano.
+                Python (pandas + ProcessPoolExecutor). Workers puros processando
+                ano-a-ano; a <em>ordem de submissão</em> (crescente ou LPT) é uma
+                variável do experimento, porque o executor entrega cada ano ao
+                primeiro worker livre.
               </div>
             </div>
           </div>
@@ -85,13 +89,16 @@ export default function Sobre() {
 
       <Card>
         <CardHeader
-          title="Metodologia do benchmark (Fase 2)"
-          description="Métricas-padrão de paralelismo"
+          title="Metodologia do benchmark (campanha v2)"
+          description="Métricas-padrão de paralelismo, pareadas por suíte"
         />
         <p className="text-sm text-academia-700">
-          O experimento mede tempo total, throughput (linhas/segundo) e CPU
-          para diferentes números de workers, comparando contra o baseline
-          sequencial. As métricas calculadas são:
+          Uma <strong>campanha</strong> tem várias suítes; cada suíte roda um
+          sequencial e, em seguida, as configurações paralelas (2, 3, 4 e 6
+          workers, em duas ordens de submissão). Cada paralela é comparada com o
+          sequencial da <em>própria</em> suíte — definição única, em SQL
+          (<code>v_benchmark_metricas</code>); o dashboard mostra a mediana por
+          configuração com mínimo e máximo entre suítes. As métricas são:
         </p>
         <dl className="text-sm text-academia-700 mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -113,10 +120,12 @@ export default function Sobre() {
             </dd>
           </div>
           <div>
-            <dt className="font-semibold">Cobertura de I/O</dt>
+            <dt className="font-semibold">Condições declaradas</dt>
             <dd className="text-academia-600">
-              Execuções realizadas fora do OneDrive para evitar contenção de
-              sincronização.
+              Máquina com núcleos físicos e lógicos registrados, passada de
+              aquecimento descartada (cache quente declarado), CPU ociosa medida
+              antes de começar, CPU média e bytes lidos do disco por execução;
+              sempre fora do OneDrive.
             </dd>
           </div>
         </dl>
@@ -133,7 +142,7 @@ export default function Sobre() {
           </li>
           <li>
             <strong>Fase 2 (concluída):</strong> Benchmark sequencial vs. paralelo
-            (2 e 4 workers).
+            (primeiras rodadas com 2 e 4 workers).
           </li>
           <li>
             <strong>Fase 3 (concluída):</strong> API FastAPI read-only para
@@ -143,8 +152,14 @@ export default function Sobre() {
             <strong>Fase 4 (concluída):</strong> Dashboard React/Vite.
           </li>
           <li>
-            <strong>Fase 5 (atual):</strong> Empacotamento e documentação
-            final — Dockerfile da API e serviço opcional no docker-compose.
+            <strong>Fase 5 (concluída):</strong> Empacotamento e documentação
+            — Dockerfile da API e serviço opcional no docker-compose.
+          </li>
+          <li>
+            <strong>Fase 6 (atual):</strong> Benchmark v2 — correção do baseline
+            do comparativo (pareamento por suíte), ordem de submissão como
+            variável, campanha oficial com repetições e instrumentação — e
+            migração para o ecossistema EnadeX (<code>enade_time/</code>).
           </li>
         </ul>
         <div className="mt-3 flex items-center gap-2 text-xs text-academia-500">

@@ -46,44 +46,61 @@ python scripts\07_validar_banco.py
 
 ---
 
-## 2. Fase 2 — benchmark
+## 2. Benchmark v2 — schema, campanha e checagem cruzada
 
-### 2.1 Benchmark sequencial (execução #4)
+> Os valores esperados desta seção **não são digitados aqui**: são os de
+> [`RESULTADOS_BENCHMARK.md`](RESULTADOS_BENCHMARK.md), gerado das views.
+> Um print vale como evidência se os números batem com a tabela de lá.
+
+### 2.1 Migração aditiva do schema
 
 **Comando:**
 ```powershell
-python scripts\08_benchmark_sequencial.py
+python scripts\14_migrar_schema_v2.py --status
 ```
 
-**Esperado:** tempo total ≈ 243 s, throughput ≈ 21.927 linhas/s.
+**Esperado:** as 11 colunas da v2 marcadas `[x]`, `views: v_benchmark_metricas, v_benchmark_resumo`, `tbl_enade_time_publicacao: existe`, contagem de execuções com campanha e oficiais.
 
-> _Adicionar print aqui — `docs/evidencias/03_bench_sequencial.png`._
+> _Adicionar print aqui — `docs/evidencias/03_schema_v2.png`._
 
 ---
 
-### 2.2 Benchmark paralelo — 2 workers (execução #5)
+### 2.2 Campanha oficial
 
 **Comando:**
 ```powershell
-python scripts\09_benchmark_paralelo.py --workers 2
+python scripts\10_rodar_suite_benchmark.py --oficial --obs "..."
 ```
 
-**Esperado:** tempo total ≈ 198 s, speedup ≈ 1,23 ×, eficiência ≈ 61 %.
+**Esperado:** cabeçalho com `4 físicos / 8 lógicos`, CPU ociosa medida, containers ativos; banner de aquecimento; as suítes (9 execuções cada, quando completas); ao final a tabela `RESUMO DA CAMPANHA (v_benchmark_resumo)` com o `n` de cada configuração e o caminho do manifesto em `backups/campanhas/`. Em cada paralela, a linha `Submissão: [...]` mostra a ordem usada e `Teto: makespan guloso … → speedup máx. …`.
 
-> _Adicionar print aqui — `docs/evidencias/04_bench_2w.png`._
+> _Adicionar print aqui — `docs/evidencias/04_campanha.png`._
 
 ---
 
-### 2.3 Benchmark paralelo — 4 workers (execução #6)
+### 2.3 Checagem cruzada das métricas
 
 **Comando:**
 ```powershell
-python scripts\09_benchmark_paralelo.py --workers 4
+python scripts\13_validar_metricas.py --api http://localhost:8000
 ```
 
-**Esperado:** tempo total ≈ 219 s, speedup ≈ 1,11 ×, eficiência ≈ 28 %.
+**Esperado:** seções A (view × Python), B (resumo × numpy) e C (API) todas `OK`, terminando em `MÉTRICAS VALIDADAS: Python, views e API concordam.`
 
-> _Adicionar print aqui — `docs/evidencias/05_bench_4w.png`._
+> _Adicionar print aqui — `docs/evidencias/05_validar_metricas.png`._
+
+---
+
+### 2.4 Testes automatizados
+
+**Comando:**
+```powershell
+pytest -q
+```
+
+**Esperado:** suíte verde (filtros, repositórios, views de benchmark — inclusive o pareamento por suíte e a estrutura 5 × 9 da campanha oficial — e rotas).
+
+> _Adicionar print aqui — `docs/evidencias/05b_pytest.png`._
 
 ---
 
@@ -103,7 +120,7 @@ python scripts\09_benchmark_paralelo.py --workers 4
 
 **URL:** http://localhost:8000/api/health
 
-**Esperado:** resposta JSON `{ "status": "ok", "database": "ok", "version": "0.1.0" }`.
+**Esperado:** resposta JSON `{ "status": "ok", "database": "ok", "version": "0.2.0" }` (0.2.0 = schema v2 do benchmark + campanhas).
 
 > _Adicionar print aqui — `docs/evidencias/07_health.png`._
 
@@ -113,7 +130,7 @@ python scripts\09_benchmark_paralelo.py --workers 4
 
 **URL:** http://localhost:8000/api/benchmark/comparativo
 
-**Esperado:** JSON com baseline #4 e itens das execuções #4, #5, #6 com speedup/eficiência calculados.
+**Esperado:** JSON com `campanha_id` da campanha oficial, `maquina` (4 físicos / 8 lógicos, `cache_quente: true`), `resumo[]` com 9 configurações (com o `n` da campanha) e `itens[]` com as execuções oficiais, cada uma com `speedup`/`eficiencia` vindos da view e `pareamento: "suite"`. `baseline_sequencial_id` é `null` (o baseline de uma campanha é a mediana dos sequenciais).
 
 > _Adicionar print aqui — `docs/evidencias/08_comparativo.png`._
 
@@ -125,7 +142,7 @@ python scripts\09_benchmark_paralelo.py --workers 4
 
 **URL:** http://localhost:5173
 
-**Esperado:** badge "API online" no header, KPIs preenchidos com valores reais (24.967, 6 anos, 2 regiões, 16 UFs, 243,55 s, 1,2265 ×, 61,32 %, 26.893 linhas/s), card destacando "Melhor configuração: 2 workers".
+**Esperado:** badge "API online" no header; KPIs de cobertura (24.967 inscrições / 582 cursos-ano, 6 anos, 2 regiões, 16 UFs); KPIs de SPD com o baseline como **mediana da campanha** (dica "mediana de n suítes") e o melhor speedup/eficiência/throughput com a dica `N workers · ordem · mediana de n suítes`; card "Melhor configuração da campanha oficial: N workers · ordem" — os valores têm de bater com `RESULTADOS_BENCHMARK.md`.
 
 > _Adicionar print aqui — `docs/evidencias/09_home.png`._
 
@@ -146,9 +163,10 @@ python scripts\09_benchmark_paralelo.py --workers 4
 **URL:** http://localhost:5173/spd/comparativo
 
 **Esperado:**
-- Card verde de destaque com "Melhor configuração: 2 workers (#5)".
-- 4 gráficos: tempo, speedup, eficiência, throughput.
-- Texto explicativo "Por que 2 workers superou 4 workers".
+- Card verde com "Melhor configuração: N workers · LPT/crescente" e o speedup **mediano** com mín–máx e o nº de suítes.
+- Card "Condições de medição": modelo da CPU, **4 núcleos físicos / 8 lógicos**, cache quente, id da campanha e nº de suítes.
+- 4 gráficos: tempo e speedup com barra de erro mín–máx (mediana), eficiência com **uma linha por ordem de submissão**, throughput.
+- "Interpretação desta campanha" gerada dos dados: melhor configuração, saturação/hyperthreads, as duas ordens e a estimativa de Karp–Flatt por configuração (com a ressalva do que ela embute).
 
 > _Adicionar print aqui — `docs/evidencias/11_spd_comparativo.png`._
 
@@ -156,9 +174,9 @@ python scripts\09_benchmark_paralelo.py --workers 4
 
 ### 4.4 Drill-down de etapas
 
-**URL:** http://localhost:5173/spd/etapas/5
+**URL:** http://localhost:5173/spd/etapas/<id de uma paralela LPT da campanha>
 
-**Esperado:** gráfico de barras com tempo por ano e tabela detalhada das 6 etapas com `worker_pid` e timestamps.
+**Esperado:** gráfico de barras com tempo por ano e tabela das 6 etapas com `worker_pid` e timestamps — os anos maiores (2021, 2017, 2014) aparecem nos primeiros pids e os menores fecham o pool: é a ordem de submissão LPT em ação.
 
 > _Adicionar print aqui — `docs/evidencias/12_etapas.png`._
 
@@ -199,9 +217,10 @@ npm run preview -- --host 0.0.0.0 --port 3000
 |--:|------|:------:|
 | 1.1 | Docker healthy | ⬜ |
 | 1.2 | Banco com 24.967 linhas | ⬜ |
-| 2.1 | Bench sequencial #4 | ⬜ |
-| 2.2 | Bench paralelo 2w #5 | ⬜ |
-| 2.3 | Bench paralelo 4w #6 | ⬜ |
+| 2.1 | Schema v2 (`14 --status`) | ⬜ |
+| 2.2 | Campanha oficial (`10 --oficial`) | ⬜ |
+| 2.3 | `13_validar_metricas --api` | ⬜ |
+| 2.4 | `pytest -q` | ⬜ |
 | 3.1 | Swagger UI | ⬜ |
 | 3.2 | `/api/health` | ⬜ |
 | 3.3 | `/api/benchmark/comparativo` | ⬜ |

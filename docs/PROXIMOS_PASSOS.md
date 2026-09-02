@@ -111,18 +111,43 @@ trabalho ou para extensões da pesquisa.
 
 ## Pesquisa / experimentos adicionais
 
-### Mais pontos no curva de speedup
-- **Esforço:** pequeno · **Benefício:** acadêmico.
-- Rodar benchmarks com 3, 6 e 8 workers além dos 2 e 4 atuais.
-- Gerar o gráfico clássico de speedup vs. número de workers e
-  ajustar a curva de Amdahl ao dado real para estimar a fração
-  paralela `p`.
+### ~~Mais pontos na curva de speedup~~ — feito na campanha oficial (v2)
+- Campanha com {2, 3, 4, 6} workers × {crescente, LPT} × 5 suítes,
+  aquecimento descartado e instrumentação de CPU/disco
+  (`RESULTADOS_BENCHMARK.md`). p = 8 ficou de fora por construção
+  (6 unidades de trabalho → dois workers ociosos).
 
-### Profiling do gargalo
+### Granularidade menor que o ano
+- **Esforço:** médio · **Benefício:** acadêmico (é o que sobe o teto).
+- O teto de speedup atual é de **escalonamento/granularidade** (6 unidades
+  de tamanhos diferentes), não de Amdahl. Particionar cada ano em blocos
+  (por UF ou por faixas de linhas) eleva o teto e permite testar p > 6 de
+  verdade. Exige manter `processar_ano` puro (blocos como novas unidades).
+
+### Repetir a campanha em outra máquina / SO
+- **Esforço:** pequeno · **Benefício:** acadêmico.
+- Máquina com mais núcleos físicos e Linux (`fork` em vez de `spawn`):
+  separa o custo do spawn do Windows do resto do overhead e testa se o
+  ponto ótimo desloca como previsto. O script 10 já grava máquina e
+  condições; basta rodar e comparar campanhas pelo `campanha_id`.
+
+### Intervalo de confiança formal
+- **Esforço:** pequeno · **Benefício:** acadêmico.
+- Com 5 suítes reportamos mediana, mín–máx e IQR. Com ~15–20 suítes cabe um
+  IC por bootstrap do speedup mediano — `v_benchmark_resumo` já agrega por
+  campanha; só o `--reps` muda.
+
+### Profiling por etapa
 - **Esforço:** médio · **Benefício:** acadêmico.
-- Usar `cProfile` ou `py-spy` no script paralelo para quantificar
-  quanto tempo é I/O, parsing pandas e `COPY` no Postgres.
-- Pode comprovar empiricamente a hipótese de gargalo de I/O.
+- Usar `py-spy` no worker para separar, dentro de cada ano, leitura/decodificação
+  de parsing pandas. A campanha já mostrou que o disco quase não é lido em
+  regime quente; o profiling diria onde a CPU vai.
+
+### Eixo de carga local × nuvem (Fase 7 do plano de migração)
+- **Esforço:** médio · **Benefício:** acadêmico + ecossistema.
+- `COPY` local × `COPY` via Session Pooler × `upsert` PostgREST em lotes,
+  n = 10, sempre em tabela vazia, RTT medido no canal testado — custo de
+  publicar no Supabase, nunca "speedup".
 
 ### Comparar com Dask/Spark
 - **Esforço:** grande · **Benefício:** acadêmico.

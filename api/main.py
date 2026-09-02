@@ -23,7 +23,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="ENADE API",
         description="API read-only sobre microdados ENADE e benchmarks SPD.",
-        version="0.1.0",
+        version="0.2.0",
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",

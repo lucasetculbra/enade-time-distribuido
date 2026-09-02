@@ -119,6 +119,13 @@ export interface PaginatedResponse<T> {
   items: T[];
 }
 
+// ---------------------------------------------------------------------------
+// Benchmark (v2: campanhas, suítes, ordem de submissão, instrumentação)
+// ---------------------------------------------------------------------------
+
+export type OrdemSubmissao = "crescente" | "lpt";
+export type Pareamento = "suite" | "temporal";
+
 export interface BenchmarkExecucao {
   id: number;
   timestamp_inicio: string;
@@ -131,6 +138,17 @@ export interface BenchmarkExecucao {
   cpu_modelo: string | null;
   memoria_pico_mb: number | null;
   observacoes: string | null;
+  // v2 (aditivo)
+  campanha_id?: string | null;
+  suite_id?: string | null;
+  oficial?: boolean;
+  ordem_submissao?: OrdemSubmissao | null;
+  cpu_fisicos?: number | null;
+  cpu_logicos?: number | null;
+  cpu_percent_medio?: number | null;
+  disco_bytes_lidos?: number | null;
+  cache_quente?: boolean | null;
+  aquecimento?: boolean;
 }
 
 export interface BenchmarkEtapa {
@@ -155,6 +173,26 @@ export interface BenchmarkMetrica {
   throughput_sequencial: number | null;
   throughput_paralelo: number | null;
   cpu_count_maquina: number;
+  // v2
+  ordem_submissao?: OrdemSubmissao | null;
+  suite_id?: string | null;
+  campanha_id?: string | null;
+  oficial?: boolean;
+  baseline_execucao_id?: number | null;
+  pareamento?: Pareamento | null;
+}
+
+export interface Campanha {
+  campanha_id: string;
+  inicio: string;
+  fim: string;
+  n_execucoes: number;
+  n_suites: number;
+  oficial: boolean;
+  cpu_fisicos: number | null;
+  cpu_logicos: number | null;
+  cpu_modelo: string | null;
+  observacoes: string | null;
 }
 
 export interface ComparativoItem {
@@ -165,6 +203,43 @@ export interface ComparativoItem {
   throughput_lps: number;
   speedup: number | null;
   eficiencia: number | null;
+  // v2
+  suite_id?: string | null;
+  campanha_id?: string | null;
+  ordem_submissao?: OrdemSubmissao | null;
+  oficial?: boolean;
+  baseline_execucao_id?: number | null;
+  pareamento?: Pareamento | null;
+}
+
+/** Uma configuração (workers × ordem) agregada sobre as suítes da campanha. */
+export interface ResumoConfiguracao {
+  modo: "sequencial" | "paralelo";
+  num_workers: number;
+  ordem_submissao: OrdemSubmissao | null;
+  n: number;
+  tempo_mediana: number;
+  tempo_min: number;
+  tempo_max: number;
+  tempo_iqr: number;
+  throughput_mediana: number;
+  speedup_mediana: number | null;
+  speedup_min: number | null;
+  speedup_max: number | null;
+  eficiencia_mediana: number | null;
+  eficiencia_min: number | null;
+  eficiencia_max: number | null;
+  oficial: boolean | null;
+  cpu_fisicos: number | null;
+  cpu_logicos: number | null;
+  cache_quente: boolean | null;
+}
+
+export interface MaquinaCampanha {
+  cpu_fisicos: number | null;
+  cpu_logicos: number | null;
+  cpu_modelo: string | null;
+  cache_quente: boolean | null;
 }
 
 export interface BenchmarkComparativo {
@@ -172,7 +247,13 @@ export interface BenchmarkComparativo {
   tempo_baseline_seg: number | null;
   throughput_baseline_lps: number | null;
   cpu_count_maquina: number | null;
+  // v2 (aditivo)
+  campanha_id?: string | null;
+  suite_id?: string | null;
+  n_suites?: number | null;
+  maquina?: MaquinaCampanha | null;
   itens: ComparativoItem[];
+  resumo?: ResumoConfiguracao[];
 }
 
 export interface HealthStatus {

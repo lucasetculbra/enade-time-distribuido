@@ -3,6 +3,7 @@ import {
   BarChart,
   Cell,
   CartesianGrid,
+  ErrorBar,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -10,18 +11,22 @@ import {
 } from "recharts";
 
 import { CHART_COLORS } from "@/lib/constants";
+import type { SerieBenchmark } from "@/lib/benchmark";
 import { formatSeconds } from "@/lib/format";
-import type { ComparativoItem } from "@/types/api";
 
-export function BarTempoExecucao({ data }: { data: ComparativoItem[] }) {
-  const chart = data.map((d) => ({
-    label:
-      d.modo === "sequencial"
-        ? `Sequencial #${d.execucao_id}`
-        : `Paralelo ${d.num_workers}w #${d.execucao_id}`,
-    tempo_total_seg: d.tempo_total_seg,
-    modo: d.modo,
+function corDaSerie(s: SerieBenchmark): string {
+  if (s.modo === "sequencial") return CHART_COLORS.seq;
+  return s.ordem_submissao === "crescente" ? CHART_COLORS.paralelo2 : CHART_COLORS.paralelo;
+}
+
+export function BarTempoExecucao({ data }: { data: SerieBenchmark[] }) {
+  const chart = data.map((s) => ({
+    label: s.label,
+    tempo: s.tempo,
+    erro: s.tempo_erro ?? undefined,
+    cor: corDaSerie(s),
   }));
+  const temErro = chart.some((c) => c.erro !== undefined);
 
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -33,13 +38,13 @@ export function BarTempoExecucao({ data }: { data: ComparativoItem[] }) {
           formatter={(v: number) => formatSeconds(v)}
           contentStyle={{ borderRadius: 8 }}
         />
-        <Bar dataKey="tempo_total_seg" name="Tempo total">
+        <Bar dataKey="tempo" name={temErro ? "Tempo (mediana; barra = mín–máx)" : "Tempo total"}>
           {chart.map((d, i) => (
-            <Cell
-              key={i}
-              fill={d.modo === "sequencial" ? CHART_COLORS.seq : CHART_COLORS.paralelo}
-            />
+            <Cell key={i} fill={d.cor} />
           ))}
+          {temErro && (
+            <ErrorBar dataKey="erro" width={6} strokeWidth={1.5} stroke="#0f172a" direction="y" />
+          )}
         </Bar>
       </BarChart>
     </ResponsiveContainer>

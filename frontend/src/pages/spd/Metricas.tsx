@@ -13,7 +13,7 @@ export default function SpdMetricas() {
     <Card>
       <CardHeader
         title="Métricas detalhadas (view v_benchmark_metricas)"
-        description="Dados crus de speedup, eficiência e throughput por execução paralela, comparados com o baseline sequencial."
+        description="Uma linha por execução paralela. Speedup e eficiência são calculados na view — definição única do sistema — pareando cada paralela com o sequencial da própria suíte (badge 'mesma suíte'); execuções antigas, anteriores ao conceito de suíte, usam o sequencial imediatamente anterior no tempo (badge 'temporal'). A coluna Baseline mostra qual execução sequencial foi usada."
         action={
           <label className="flex items-center gap-2 text-xs text-academia-700">
             <input

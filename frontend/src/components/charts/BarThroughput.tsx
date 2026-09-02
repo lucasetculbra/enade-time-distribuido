@@ -10,18 +10,21 @@ import {
 } from "recharts";
 
 import { CHART_COLORS } from "@/lib/constants";
+import type { SerieBenchmark } from "@/lib/benchmark";
 import { formatThroughput } from "@/lib/format";
-import type { ComparativoItem } from "@/types/api";
 
-export function BarThroughput({ data }: { data: ComparativoItem[] }) {
-  const chart = data.map((d) => ({
-    label:
-      d.modo === "sequencial"
-        ? `Sequencial #${d.execucao_id}`
-        : `Paralelo ${d.num_workers}w #${d.execucao_id}`,
-    throughput_lps: d.throughput_lps,
-    modo: d.modo,
+function corDaSerie(s: SerieBenchmark): string {
+  if (s.modo === "sequencial") return CHART_COLORS.seq;
+  return s.ordem_submissao === "crescente" ? CHART_COLORS.paralelo2 : CHART_COLORS.paralelo;
+}
+
+export function BarThroughput({ data }: { data: SerieBenchmark[] }) {
+  const chart = data.map((s) => ({
+    label: s.label,
+    throughput: s.throughput,
+    cor: corDaSerie(s),
   }));
+  const agregado = data.some((s) => s.n > 1);
 
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -33,12 +36,9 @@ export function BarThroughput({ data }: { data: ComparativoItem[] }) {
           formatter={(v: number) => formatThroughput(v)}
           contentStyle={{ borderRadius: 8 }}
         />
-        <Bar dataKey="throughput_lps" name="Throughput">
+        <Bar dataKey="throughput" name={agregado ? "Throughput (mediana)" : "Throughput"}>
           {chart.map((d, i) => (
-            <Cell
-              key={i}
-              fill={d.modo === "sequencial" ? CHART_COLORS.seq : CHART_COLORS.paralelo}
-            />
+            <Cell key={i} fill={d.cor} />
           ))}
         </Bar>
       </BarChart>

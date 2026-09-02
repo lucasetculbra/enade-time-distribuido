@@ -1,5 +1,6 @@
 import {
   CartesianGrid,
+  Legend,
   Line,
   LineChart,
   ReferenceLine,
@@ -10,17 +11,36 @@ import {
 } from "recharts";
 
 import { CHART_COLORS } from "@/lib/constants";
+import { ROTULO_ORDEM, type SerieBenchmark } from "@/lib/benchmark";
 import { formatPercent } from "@/lib/format";
-import type { ComparativoItem } from "@/types/api";
+import type { OrdemSubmissao } from "@/types/api";
 
-export function LineEficiencia({ data }: { data: ComparativoItem[] }) {
-  const chart = data
-    .filter((d) => d.modo === "paralelo" && d.eficiencia !== null)
-    .sort((a, b) => a.num_workers - b.num_workers)
-    .map((d) => ({
-      workers: d.num_workers,
-      eficiencia: d.eficiencia ?? 0,
-    }));
+/**
+ * Eficiência por número de workers. Uma linha por ordem de submissão
+ * (LPT × crescente) quando a campanha mediu as duas; no banco legado todas as
+ * paralelas são `crescente` (única ordem que o script 09 conhecia).
+ */
+export function LineEficiencia({ data }: { data: SerieBenchmark[] }) {
+  const paralelos = data.filter((s) => s.modo === "paralelo" && s.eficiencia !== null);
+  const ordens = (["lpt", "crescente"] as OrdemSubmissao[]).filter((o) =>
+    paralelos.some((s) => (s.ordem_submissao ?? "crescente") === o),
+  );
+  const workers = Array.from(new Set(paralelos.map((s) => s.num_workers))).sort((a, b) => a - b);
+
+  // Uma linha por (workers); colunas = eficiência de cada ordem.
+  const chart = workers.map((w) => {
+    const row: Record<string, number | null> = { workers: w };
+    for (const o of ordens) {
+      const s = paralelos.find((p) => p.num_workers === w && (p.ordem_submissao ?? "crescente") === o);
+      row[o] = s?.eficiencia ?? null;
+    }
+    return row;
+  });
+
+  const cor: Record<OrdemSubmissao, string> = {
+    lpt: CHART_COLORS.paralelo,
+    crescente: CHART_COLORS.paralelo2,
+  };
 
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -28,6 +48,9 @@ export function LineEficiencia({ data }: { data: ComparativoItem[] }) {
         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
         <XAxis
           dataKey="workers"
+          type="number"
+          domain={["dataMin", "dataMax"]}
+          ticks={workers}
           stroke="#475569"
           fontSize={12}
           label={{
@@ -48,6 +71,7 @@ export function LineEficiencia({ data }: { data: ComparativoItem[] }) {
           formatter={(v: number) => formatPercent(v)}
           contentStyle={{ borderRadius: 8 }}
         />
+        {ordens.length > 1 && <Legend />}
         <ReferenceLine
           y={1}
           stroke={CHART_COLORS.ideal}
@@ -59,14 +83,18 @@ export function LineEficiencia({ data }: { data: ComparativoItem[] }) {
             fill: CHART_COLORS.ideal,
           }}
         />
-        <Line
-          type="monotone"
-          dataKey="eficiencia"
-          name="Eficiência"
-          stroke={CHART_COLORS.paralelo}
-          strokeWidth={2.5}
-          dot={{ r: 5 }}
-        />
+        {ordens.map((o) => (
+          <Line
+            key={o}
+            type="monotone"
+            dataKey={o}
+            name={`Eficiência (${ROTULO_ORDEM[o]})`}
+            stroke={cor[o]}
+            strokeWidth={2.5}
+            dot={{ r: 5 }}
+            connectNulls
+          />
+        ))}
       </LineChart>
     </ResponsiveContainer>
   );

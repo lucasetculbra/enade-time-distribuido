@@ -21,8 +21,14 @@ original por ano**, a **forma harmonizada** adotada no pipeline e as
 - **Edições:** 2005, 2008, 2011, 2014, 2017, 2021 (ciclos trienais da área).
 - **Cursos:** Computação — `CO_GRUPO` ∈ {40, 4004}.
 - **Regiões:** Norte e Nordeste — `CO_REGIAO_CURSO` ∈ {1, 2}.
-- **Grão da base consolidada:** curso (linha do `arq1` filtrado); as notas são
-  médias por `CO_CURSO` calculadas a partir do `arq3`.
+- **Grão da base consolidada:** linha do `arq1` filtrado (uma por inscrição); as
+  notas são médias por `CO_CURSO` calculadas a partir do `arq3`.
+- **Unidade analítica: curso-ano.** As 13 colunas são função de (`NU_ANO`,
+  `CO_CURSO`): são **582 pares distintos** (216 `CO_CURSO`), e 24.385 das 24.967
+  linhas são réplicas integrais. Médias calculadas diretamente sobre a base são,
+  portanto, **ponderadas por matrícula**; o N para inferência é 582, não 24.967.
+  A view `v_enade_time_curso_ano` (Supabase) materializa esse grão com os nomes
+  de coluna do E-XplainENADE. (Ver `DESIGN_LOG.md`, D16.)
 
 ---
 

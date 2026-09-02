@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from psycopg2.extensions import cursor as PgCursor
 
@@ -8,15 +10,21 @@ from api.schemas.benchmark import (
     BenchmarkEtapa,
     BenchmarkExecucao,
     BenchmarkMetrica,
+    Campanha,
 )
 from api.settings import Settings, get_settings
 
 router = APIRouter(prefix="/benchmark", tags=["benchmark"])
 
 
+def _uuid_str(valor: UUID | None) -> str | None:
+    return str(valor) if valor is not None else None
+
+
 @router.get("/execucoes", response_model=list[BenchmarkExecucao])
 def execucoes(
     apenas_validas: bool = Query(True),
+    campanha_id: UUID | None = Query(None, description="Restringe a uma campanha"),
     cursor: PgCursor = Depends(get_db_cursor),
     settings: Settings = Depends(get_settings),
 ) -> list[dict]:
@@ -24,6 +32,7 @@ def execucoes(
         cursor,
         apenas_validas=apenas_validas,
         ids_excluir=settings.benchmark_ids_excluir,
+        campanha_id=_uuid_str(campanha_id),
     )
 
 
@@ -66,6 +75,7 @@ def etapas(
 @router.get("/metricas", response_model=list[BenchmarkMetrica])
 def metricas(
     apenas_validas: bool = Query(True),
+    campanha_id: UUID | None = Query(None, description="Restringe a uma campanha"),
     cursor: PgCursor = Depends(get_db_cursor),
     settings: Settings = Depends(get_settings),
 ) -> list[dict]:
@@ -73,12 +83,22 @@ def metricas(
         cursor,
         apenas_validas=apenas_validas,
         ids_excluir=settings.benchmark_ids_excluir,
+        campanha_id=_uuid_str(campanha_id),
     )
+
+
+@router.get("/campanhas", response_model=list[Campanha])
+def campanhas(cursor: PgCursor = Depends(get_db_cursor)) -> list[dict]:
+    """Campanhas de benchmark (grupos de suítes), da mais recente para a mais antiga."""
+    return benchmark_repo.listar_campanhas(cursor)
 
 
 @router.get("/comparativo", response_model=BenchmarkComparativo)
 def comparativo(
     apenas_validas: bool = Query(True),
+    campanha_id: UUID | None = Query(
+        None, description="Campanha a comparar (padrão: a oficial mais recente)"),
+    suite_id: UUID | None = Query(None, description="Drill-down em uma suíte"),
     cursor: PgCursor = Depends(get_db_cursor),
     settings: Settings = Depends(get_settings),
 ) -> dict:
@@ -86,4 +106,6 @@ def comparativo(
         cursor,
         apenas_validas=apenas_validas,
         ids_excluir=settings.benchmark_ids_excluir,
+        campanha_id=_uuid_str(campanha_id),
+        suite_id=_uuid_str(suite_id),
     )
